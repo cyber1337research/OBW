@@ -34,18 +34,28 @@ const MotionBox = motion(Box);
 
 // Sample data for charts
 const pieData = [
-  { name: 'Active', value: 65 },
-  { name: 'Inactive', value: 35 },
+  { name: 'Code Generation', value: 30 },
+  { name: 'Conversation', value: 25 },
+  { name: 'Productivity', value: 15 },
+  { name: 'Grammar', value: 10 },
+  { name: 'Healthcare', value: 8 },
+  { name: 'Media', value: 5 },
+  { name: 'Travel', value: 4 },
+  { name: 'Business', value: 3 },
 ];
 
 const barData = [
-  { name: 'Jan', value: 30 },
-  { name: 'Feb', value: 45 },
-  { name: 'Mar', value: 60 },
-  { name: 'Apr', value: 40 },
+  { name: 'Code Gen', users: 1200 },
+  { name: 'Chat', users: 1000 },
+  { name: 'Prod', users: 800 },
+  { name: 'Grammar', users: 600 },
+  { name: 'Health', users: 400 },
+  { name: 'Media', users: 300 },
+  { name: 'Travel', users: 200 },
+  { name: 'Business', users: 150 },
 ];
 
-const COLORS = ['#48BB78', '#9AE6B4', '#68D391', '#C6F6D5'];
+const COLORS = ['#48BB78', '#38A169', '#2F855A', '#276749', '#22543D', '#1C4532', '#133C2D', '#0C2921'];
 
 interface Step {
   title: string;
@@ -59,28 +69,57 @@ interface Step {
 
 const steps: Step[] = [
   {
-    title: 'Welcome to Organization Setup',
-    description: 'Welcome to our organization setup wizard! This guide will help you configure your organization\'s settings and preferences. We\'ll walk you through important decisions and show you relevant data to help make informed choices.',
+    title: 'Welcome to Organization AI Security Setup',
+    description: 'Welcome to the AI Security Setup Wizard\n\n' +
+      'This guided setup will help you configure your organization\'s AI usage policies to maximize both security and compliance.\n\n' +
+      'We\'ll walk you through key decisions and provide real-time insights based on your organization\'s actual AI usage.\n\n' +
+      'Let\'s make data-informed choices together.',
   },
   {
-    title: 'Security Settings',
-    description: 'Configure your organization\'s security settings. These settings will determine how users authenticate and what security measures are in place to protect your data.',
+    title: 'Select Approved AI Use Cases',
+    description: 'Choose the AI use-cases your organization will allow. These preferences help us tailor AI security settings to your actual business needs.',
+    // your organization\'s security settings. These settings will determine how users authenticate and what security measures are in place to protect your data.',
     configurations: [
       {
-        name: 'Enable Two-Factor Authentication',
-        tooltip: 'Requires users to provide a second form of verification when logging in',
+        name: 'Code Generation',
+        tooltip: 'Code generation is the process of using AI to generate code for a given task. This is a common use-case for AI and is often used to generate code for a given task.',
         default: true,
       },
       {
-        name: 'Enforce Password Rotation',
-        tooltip: 'Requires users to change their password every 90 days',
+        name: 'Conversation',
+        tooltip: 'Conversation is the process of using AI to have a conversation with a user. This is a common use-case for AI and is often used to have a conversation with a user.',
+        default: true,
+      },
+      {
+        name: 'Productivity',
+        tooltip: 'Productivity is the process of using AI to help with tasks that are repetitive and time-consuming. This is a common use-case for AI and is often used to help with tasks that are repetitive and time-consuming.',
         default: false,
       },
       {
-        name: 'Allow Single Sign-On',
-        tooltip: 'Enable authentication through your organization\'s identity provider',
-        default: true,
+        name: 'Grammar',
+        tooltip: 'Grammar is the process of using AI to help with tasks that are repetitive and time-consuming. This is a common use-case for AI and is often used to help with tasks that are repetitive and time-consuming.',
+        default: false,
       },
+      {
+        name: 'Healthcare',
+        tooltip: 'Healthcare is the process of using AI to help with tasks that are repetitive and time-consuming. This is a common use-case for AI and is often used to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Media',
+        tooltip: 'Media is the process of using AI to help with tasks that are repetitive and time-consuming. This is a common use-case for AI and is often used to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Travel',
+        tooltip: 'Travel is the process of using AI to help with tasks that are repetitive and time-consuming. This is a common use-case for AI and is often used to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Business',
+        tooltip: 'Business is the process of using AI to help with tasks that are repetitive and time-consuming. This is a common use-case for AI and is often used to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      }
     ],
   },
   {
@@ -174,28 +213,47 @@ const OnboardingWizard = () => {
                 {steps[currentStep].title}
               </Heading>
               
-              <Text fontSize="lg" color="gray.600">
+              <Text fontSize="xl" color="gray.600" whiteSpace="pre-line" lineHeight="1.8">
                 {steps[currentStep].description}
               </Text>
 
               {steps[currentStep].configurations && (
-                <VStack spacing={4} align="stretch" pt={4}>
-                  {steps[currentStep].configurations.map((config) => (
-                    <HStack key={config.name} justify="space-between">
-                      <HStack>
-                        <Text fontSize="md">{config.name}</Text>
-                        <Tooltip label={config.tooltip} placement="top">
-                          <Icon as={InfoIcon} color="gray.400" />
-                        </Tooltip>
+                <Stack direction="row" spacing={8} align="start" pt={4}>
+                  <VStack spacing={4} align="stretch" flex={1}>
+                    {steps[currentStep].configurations.slice(0, 4).map((config) => (
+                      <HStack key={config.name} justify="space-between">
+                        <HStack>
+                          <Text fontSize="md">{config.name}</Text>
+                          <Tooltip label={config.tooltip} placement="top">
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                        <Switch
+                          colorScheme="green"
+                          defaultChecked={config.default}
+                          onChange={() => handleToggle(config.name)}
+                        />
                       </HStack>
-                      <Switch
-                        colorScheme="green"
-                        defaultChecked={config.default}
-                        onChange={() => handleToggle(config.name)}
-                      />
-                    </HStack>
-                  ))}
-                </VStack>
+                    ))}
+                  </VStack>
+                  <VStack spacing={4} align="stretch" flex={1}>
+                    {steps[currentStep].configurations.slice(4).map((config) => (
+                      <HStack key={config.name} justify="space-between">
+                        <HStack>
+                          <Text fontSize="md">{config.name}</Text>
+                          <Tooltip label={config.tooltip} placement="top">
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                        <Switch
+                          colorScheme="green"
+                          defaultChecked={config.default}
+                          onChange={() => handleToggle(config.name)}
+                        />
+                      </HStack>
+                    ))}
+                  </VStack>
+                </Stack>
               )}
 
               {currentStep > 0 && (
@@ -204,11 +262,14 @@ const OnboardingWizard = () => {
                   
                   <Box>
                     <Heading size="md" color="green.600" mb={6}>
-                      What's happening in my organization?
+                      What’s Happening in Your Organization?
                     </Heading>
                     
                     <HStack spacing={8} align="start">
                       <Box flex={1} h="300px">
+                        <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                        GenAI Apps in Use (by Category)
+                        </Heading>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
@@ -231,6 +292,9 @@ const OnboardingWizard = () => {
                       </Box>
                       
                       <Box flex={1} h="300px">
+                        <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                        User Engagement per Use Case
+                        </Heading>
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={barData}>
                             <CartesianGrid strokeDasharray="3 3" />
@@ -238,7 +302,7 @@ const OnboardingWizard = () => {
                             <YAxis />
                             <RechartsTooltip />
                             <Legend />
-                            <Bar dataKey="value" fill="#48BB78" />
+                            <Bar dataKey="users" fill="#48BB78" />
                           </BarChart>
                         </ResponsiveContainer>
                       </Box>
