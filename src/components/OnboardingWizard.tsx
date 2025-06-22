@@ -17,13 +17,18 @@ import {
   List,
   ListItem,
   ListIcon,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from '@chakra-ui/react';
 import { 
   InfoIcon, 
   ChevronLeftIcon, 
   ChevronRightIcon,
   StarIcon,
-  SunIcon
+  SunIcon,
+  ChevronDownIcon,
 } from '@chakra-ui/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -67,6 +72,19 @@ const barData = [
 
 const COLORS = ['#48BB78', '#38A169', '#2F855A', '#276749', '#22543D', '#1C4532', '#133C2D', '#0C2921'];
 
+type LicenseType = 'Private License Only' | 'Enterprise License Only' | 'Both';
+
+interface AIApplication {
+  name: string;
+  tooltip: string;
+  default: boolean;
+  licenseType: LicenseType;
+  usageStats: {
+    privateLicense: number;
+    enterpriseLicense: number;
+  };
+}
+
 interface Step {
   title: string;
   description: string;
@@ -75,7 +93,61 @@ interface Step {
     tooltip: string;
     default: boolean;
   }[];
+  aiApplications?: AIApplication[];
 }
+
+// Sample data for AI application usage
+const aiApplicationData = [
+  {
+    name: 'ChatGPT',
+    tooltip: 'OpenAI\'s ChatGPT for general purpose AI interactions',
+    default: true,
+    licenseType: 'Both' as LicenseType,
+    usageStats: { privateLicense: 800, enterpriseLicense: 1200 }
+  },
+  {
+    name: 'Claude',
+    tooltip: 'Anthropic\'s Claude for advanced AI assistance',
+    default: true,
+    licenseType: 'Enterprise License Only' as LicenseType,
+    usageStats: { privateLicense: 300, enterpriseLicense: 900 }
+  },
+  {
+    name: 'Preplexity',
+    tooltip: 'Preplexity for specialized AI tasks',
+    default: false,
+    licenseType: 'Private License Only' as LicenseType,
+    usageStats: { privateLicense: 400, enterpriseLicense: 0 }
+  },
+  {
+    name: 'Deepseek',
+    tooltip: 'Deepseek for advanced AI research',
+    default: false,
+    licenseType: 'Both' as LicenseType,
+    usageStats: { privateLicense: 200, enterpriseLicense: 300 }
+  },
+  {
+    name: 'Cursor',
+    tooltip: 'AI-powered code editor',
+    default: true,
+    licenseType: 'Enterprise License Only' as LicenseType,
+    usageStats: { privateLicense: 100, enterpriseLicense: 700 }
+  },
+  {
+    name: 'M365 Copilot',
+    tooltip: 'Microsoft 365 AI assistant',
+    default: true,
+    licenseType: 'Enterprise License Only' as LicenseType,
+    usageStats: { privateLicense: 0, enterpriseLicense: 1500 }
+  }
+];
+
+// Updated bar data for AI applications
+const aiUsageData = aiApplicationData.map(app => ({
+  name: app.name,
+  privateLicense: app.usageStats.privateLicense,
+  enterpriseLicense: app.usageStats.enterpriseLicense,
+}));
 
 const steps: Step[] = [
   {
@@ -86,9 +158,13 @@ const steps: Step[] = [
       'Let\'s make data-informed choices together.',
   },
   {
+    title: 'Select Approved AI Applications',
+    description: 'AI Applications spans across various vendors. Choose what AI apps your organization will allow.',
+    aiApplications: aiApplicationData,
+  },
+  {
     title: 'Select Approved AI Use Cases',
     description: 'Choose the AI use-cases your organization will allow. These preferences help us tailor AI security settings to your actual business needs.',
-    // your organization\'s security settings. These settings will determine how users authenticate and what security measures are in place to protect your data.',
     configurations: [
       {
         name: 'Code Generation',
@@ -158,6 +234,7 @@ const steps: Step[] = [
 const OnboardingWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [configurations, setConfigurations] = useState<{ [key: string]: boolean }>({});
+  const [aiAppConfigs, setAiAppConfigs] = useState<{ [key: string]: { enabled: boolean, licenseType: LicenseType } }>({});
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
 
   const handleNext = () => {
@@ -178,9 +255,29 @@ const OnboardingWizard = () => {
   };
 
   const handleToggle = (configName: string) => {
-    setConfigurations(prev => ({
+    if (steps[currentStep].configurations) {
+      setConfigurations(prev => ({
+        ...prev,
+        [configName]: !prev[configName],
+      }));
+    } else if (steps[currentStep].aiApplications) {
+      setAiAppConfigs(prev => ({
+        ...prev,
+        [configName]: {
+          ...prev[configName],
+          enabled: !prev[configName]?.enabled
+        }
+      }));
+    }
+  };
+
+  const handleLicenseTypeChange = (appName: string, licenseType: LicenseType) => {
+    setAiAppConfigs(prev => ({
       ...prev,
-      [configName]: !prev[configName],
+      [appName]: {
+        ...prev[appName],
+        licenseType
+      }
     }));
   };
 
@@ -190,6 +287,18 @@ const OnboardingWizard = () => {
   const sidePanelBg = useColorModeValue('gray.50', 'gray.700');
 
   const getRecommendations = () => {
+    if (currentStep === 1) { // AI Applications step
+      const topApp = aiApplicationData.reduce((prev, current) => 
+        (prev.usageStats.privateLicense + prev.usageStats.enterpriseLicense > 
+         current.usageStats.privateLicense + current.usageStats.enterpriseLicense) ? prev : current
+      );
+      
+      return [
+        `${topApp.name} leads adoption with ${topApp.usageStats.privateLicense + topApp.usageStats.enterpriseLicense} total users across both license types.`,
+        'Enterprise licenses show higher adoption rates across most AI applications.',
+        'Consider implementing cross-application monitoring to prevent data leaks between applications.',
+      ];
+    }
     const totalUsers = barData.reduce((sum, item) => sum + item.users, 0);
     const topUseCase = barData.reduce((prev, current) => 
       (prev.users > current.users) ? prev : current
@@ -302,6 +411,51 @@ const OnboardingWizard = () => {
                   </Stack>
                 )}
 
+                {steps[currentStep].aiApplications && (
+                  <Stack direction="row" spacing={8} align="start" pt={4}>
+                    <VStack spacing={4} align="stretch" flex={1}>
+                      {steps[currentStep].aiApplications.map((app) => (
+                        <HStack key={app.name} justify="space-between">
+                          <HStack>
+                            <Text fontSize="md">{app.name}</Text>
+                            <Tooltip label={app.tooltip} placement="top">
+                              <Icon as={InfoIcon} color="gray.400" />
+                            </Tooltip>
+                          </HStack>
+                          <HStack spacing={4}>
+                            <Menu>
+                              <MenuButton
+                                as={Button}
+                                rightIcon={<ChevronDownIcon />}
+                                size="sm"
+                                variant="outline"
+                              >
+                                {aiAppConfigs[app.name]?.licenseType || app.licenseType}
+                              </MenuButton>
+                              <MenuList>
+                                <MenuItem onClick={() => handleLicenseTypeChange(app.name, 'Private License Only')}>
+                                  Private License Only
+                                </MenuItem>
+                                <MenuItem onClick={() => handleLicenseTypeChange(app.name, 'Enterprise License Only')}>
+                                  Enterprise License Only
+                                </MenuItem>
+                                <MenuItem onClick={() => handleLicenseTypeChange(app.name, 'Both')}>
+                                  Both
+                                </MenuItem>
+                              </MenuList>
+                            </Menu>
+                            <Switch
+                              colorScheme="green"
+                              defaultChecked={app.default}
+                              onChange={() => handleToggle(app.name)}
+                            />
+                          </HStack>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Stack>
+                )}
+
                 {currentStep > 0 && (
                   <>
                     <Divider my={6} borderColor={borderColor} />
@@ -312,46 +466,67 @@ const OnboardingWizard = () => {
                       </Heading>
                       
                       <HStack spacing={8} align="start">
-                        <Box flex={1} h="300px">
-                          <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                          GenAI Apps in Use (by Category)
-                          </Heading>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={pieData}
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                                label
-                              >
-                                {pieData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Legend />
-                              <RechartsTooltip />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </Box>
-                        
-                        <Box flex={1} h="300px">
-                          <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                          User Engagement per Use Case
-                          </Heading>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={barData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis />
-                              <RechartsTooltip />
-                              <Legend />
-                              <Bar dataKey="users" fill="#48BB78" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </Box>
+                        {currentStep === 1 ? (
+                          <Box flex={1} h="300px">
+                            <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                              AI Application Usage by License Type
+                            </Heading>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={aiUsageData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Legend />
+                                <Bar dataKey="privateLicense" name="Private License" fill="#48BB78" />
+                                <Bar dataKey="enterpriseLicense" name="Enterprise License" fill="#38A169" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        ) : (
+                          <>
+                            <Box flex={1} h="300px">
+                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                              GenAI Apps in Use (by Category)
+                              </Heading>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={pieData}
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label
+                                  >
+                                    {pieData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Legend />
+                                  <RechartsTooltip />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </Box>
+                            
+                            <Box flex={1} h="300px">
+                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                              User Engagement per Use Case
+                              </Heading>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={barData}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="name" />
+                                  <YAxis />
+                                  <RechartsTooltip />
+                                  <Legend />
+                                  <Bar dataKey="users" fill="#48BB78" />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </Box>
+                          </>
+                        )}
                       </HStack>
                     </Box>
                   </>
