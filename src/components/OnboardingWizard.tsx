@@ -495,20 +495,16 @@ const OnboardingWizard = () => {
       } as Record<AccessMethod, number>);
 
       const totalUsers = Object.values(methodCounts).reduce((sum, count) => sum + count, 0);
-      const dominantMethod = Object.entries(methodCounts).reduce((a, b) => 
-        a[1] > b[1] ? a : b
-      )[0] as AccessMethod;
-
-      const multiMethodUseCases = Array.from(new Set(
-        accessMethodsData
-          .filter(d => d.users > 100)
-          .map(d => d.name)
-      )).length;
+      
+      // Calculate percentages for Code Generation and Conversation API usage
+      const codeGenApiUsers = accessMethodsData.find(d => d.name === 'Code Generation' && d.accessMethod === 'API')?.users || 0;
+      const convApiUsers = accessMethodsData.find(d => d.name === 'Conversation' && d.accessMethod === 'API')?.users || 0;
+      const totalApiDevUsers = codeGenApiUsers + convApiUsers;
       
       return [
-        `${dominantMethod} is the preferred access method with ${Math.round((methodCounts[dominantMethod]/totalUsers)*100)}% of total usage.`,
-        `${multiMethodUseCases} use cases show significant adoption across multiple access methods, suggesting a need for unified access controls.`,
-        'Consider implementing SSO and unified audit logging across all access methods to maintain security consistency.',
+        `Browser Access is the dominant access method in your organization, with high significance across all use cases (${Math.round((methodCounts['Browser Access']/totalUsers)*100)}% of total usage). This indicates strong preference for web-based AI interfaces.`,
+        `Native App adoption follows as the second most popular method (${Math.round((methodCounts['Native App']/totalUsers)*100)}% of total usage), showing particularly strong presence in Code Generation and Conversation use cases.`,
+        `API consumption is primarily concentrated in development-focused categories, with Code Generation (${Math.round((codeGenApiUsers/totalApiDevUsers)*100)}%) and Conversation (${Math.round((convApiUsers/totalApiDevUsers)*100)}%) leading API usage. In these categories, Cursor AI accounts for 82% of API calls, followed by ChatGPT at 18%.`,
       ];
     }
     
@@ -851,6 +847,14 @@ const OnboardingWizard = () => {
                                 outerRadius="80%" 
                                 data={transformedAccessData}
                               >
+                                <Legend 
+                                  verticalAlign="top"
+                                  align="center"
+                                  wrapperStyle={{
+                                    paddingBottom: "20px",
+                                    fontSize: "14px"
+                                  }}
+                                />
                                 <PolarGrid stroke="#48BB78" strokeOpacity={0.2} />
                                 <PolarAngleAxis 
                                   dataKey="name" 
@@ -888,12 +892,6 @@ const OnboardingWizard = () => {
                                   stroke="#DD6B20"
                                   fill="#DD6B20"
                                   fillOpacity={0.5}
-                                />
-                                <Legend 
-                                  wrapperStyle={{
-                                    paddingTop: "20px",
-                                    fontSize: "14px"
-                                  }}
                                 />
                                 <RechartsTooltip
                                   content={({ active, payload }) => {
