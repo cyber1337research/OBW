@@ -27,6 +27,7 @@ import {
   StatHelpText,
   SimpleGrid,
   Select,
+  Collapse,
 } from '@chakra-ui/react';
 import { 
   InfoIcon, 
@@ -35,6 +36,7 @@ import {
   StarIcon,
   SunIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
 } from '@chakra-ui/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -49,9 +51,13 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
-  Sankey,
-  Layer,
-  Rectangle,
+  RadialBarChart,
+  RadialBar,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from 'recharts';
 
 const MotionBox = motion(Box);
@@ -291,55 +297,90 @@ interface UseCaseAccess {
   users: number;
 }
 
-// Sample data for access methods
+// Sample data for access methods with more meaningful patterns
 const accessMethodsData = [
-  { name: 'Code Generation', accessMethod: 'API', users: 800 },
-  { name: 'Code Generation', accessMethod: 'Native App', users: 300 },
-  { name: 'Code Generation', accessMethod: 'Browser Access', users: 100 },
-  { name: 'Conversation', accessMethod: 'Browser Access', users: 600 },
-  { name: 'Conversation', accessMethod: 'Native App', users: 400 },
-  { name: 'Productivity', accessMethod: 'Browser Access', users: 500 },
+  // Code Generation: Strong Browser, good Native App, significant API
+  { name: 'Code Generation', accessMethod: 'Browser Access', users: 2000 },
+  { name: 'Code Generation', accessMethod: 'Native App', users: 1500 },
+  { name: 'Code Generation', accessMethod: 'API', users: 1200 },
+  
+  // Conversation: Strong Browser, good Native App, moderate API
+  { name: 'Conversation', accessMethod: 'Browser Access', users: 2200 },
+  { name: 'Conversation', accessMethod: 'Native App', users: 1600 },
+  { name: 'Conversation', accessMethod: 'API', users: 800 },
+  
+  // Productivity: Browser dominant, moderate Native App, low API
+  { name: 'Productivity', accessMethod: 'Browser Access', users: 1800 },
+  { name: 'Productivity', accessMethod: 'Native App', users: 1000 },
   { name: 'Productivity', accessMethod: 'API', users: 300 },
-  { name: 'Grammar', accessMethod: 'Browser Access', users: 400 },
-  { name: 'Grammar', accessMethod: 'Native App', users: 200 },
+  
+  // Grammar: Browser dominant, some Native App, minimal API
+  { name: 'Grammar', accessMethod: 'Browser Access', users: 1600 },
+  { name: 'Grammar', accessMethod: 'Native App', users: 800 },
+  { name: 'Grammar', accessMethod: 'API', users: 200 },
+  
+  // Healthcare: Browser dominant, good Native App presence
+  { name: 'Healthcare', accessMethod: 'Browser Access', users: 1500 },
+  { name: 'Healthcare', accessMethod: 'Native App', users: 900 },
   { name: 'Healthcare', accessMethod: 'API', users: 300 },
-  { name: 'Healthcare', accessMethod: 'Native App', users: 100 },
-  { name: 'Media', accessMethod: 'Browser Access', users: 200 },
-  { name: 'Media', accessMethod: 'API', users: 100 },
-  { name: 'Travel', accessMethod: 'Browser Access', users: 150 },
-  { name: 'Travel', accessMethod: 'Native App', users: 50 },
-  { name: 'Business', accessMethod: 'API', users: 100 },
-  { name: 'Business', accessMethod: 'Browser Access', users: 50 },
+  
+  // Media: Strong Browser focus, moderate Native App
+  { name: 'Media', accessMethod: 'Browser Access', users: 1400 },
+  { name: 'Media', accessMethod: 'Native App', users: 700 },
+  { name: 'Media', accessMethod: 'API', users: 200 },
+  
+  // Travel: Browser-centric, good Native App support
+  { name: 'Travel', accessMethod: 'Browser Access', users: 1300 },
+  { name: 'Travel', accessMethod: 'Native App', users: 800 },
+  { name: 'Travel', accessMethod: 'API', users: 250 },
+  
+  // Business: Browser dominant, moderate Native App
+  { name: 'Business', accessMethod: 'Browser Access', users: 1700 },
+  { name: 'Business', accessMethod: 'Native App', users: 900 },
+  { name: 'Business', accessMethod: 'API', users: 300 }
 ];
 
-// Prepare Sankey data
-const useCaseNodes = Array.from(new Set(accessMethodsData.map(d => d.name)))
-  .map((name, index) => ({ name, id: index }));
-
-const accessMethodNodes = Array.from(new Set(accessMethodsData.map(d => d.accessMethod)))
-  .map((name, index) => ({ name, id: index + useCaseNodes.length }));
-
-const allNodes = [...useCaseNodes, ...accessMethodNodes];
-
-const sankeyData = {
-  nodes: allNodes,
-  links: accessMethodsData.map(d => {
-    const sourceNode = allNodes.find(n => n.name === d.name);
-    const targetNode = allNodes.find(n => n.name === d.accessMethod);
+// Transform data for the circular network visualization
+const transformedAccessData = (() => {
+  const useCases = Array.from(new Set(accessMethodsData.map(d => d.name)));
+  return useCases.map(useCase => {
+    const methods = accessMethodsData
+      .filter(d => d.name === useCase)
+      .reduce((acc, curr) => {
+        acc[curr.accessMethod] = curr.users;
+        return acc;
+      }, {} as Record<string, number>);
+    
     return {
-      source: sourceNode?.id || 0,
-      target: targetNode?.id || 0,
-      value: d.users,
+      name: useCase,
+      "Browser Access": methods["Browser Access"] || 0,
+      "Native App": methods["Native App"] || 0,
+      "API": methods["API"] || 0,
+      total: Object.values(methods).reduce((a, b) => a + b, 0)
     };
-  }),
-};
+  }).sort((a, b) => b.total - a.total);
+})();
 
 const OnboardingWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [configurations, setConfigurations] = useState<{ [key: string]: boolean }>({});
   const [aiAppConfigs, setAiAppConfigs] = useState<{ [key: string]: { enabled: boolean, licenseType: LicenseType } }>({});
-  const [accessConfigs, setAccessConfigs] = useState<{ [key: string]: { enabled: boolean, accessMethod: AccessMethod } }>({});
+  const [accessConfigs, setAccessConfigs] = useState<{ [key: string]: { enabled: boolean, accessMethods: AccessMethod[] } }>({});
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    Development: true,
+    Communication: true,
+    Business: true,
+    Other: true
+  });
+
+  // Add toggle function for sections
+  const toggleSection = (sectionName: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -393,14 +434,22 @@ const OnboardingWizard = () => {
     }));
   };
 
-  const handleAccessMethodChange = (useCaseName: string, accessMethod: AccessMethod) => {
-    setAccessConfigs(prev => ({
-      ...prev,
-      [useCaseName]: {
-        ...prev[useCaseName],
-        accessMethod
-      }
-    }));
+  const handleAccessMethodToggle = (useCaseName: string, method: AccessMethod) => {
+    setAccessConfigs(prev => {
+      const currentMethods = prev[useCaseName]?.accessMethods || [];
+      const newMethods = currentMethods.includes(method)
+        ? currentMethods.filter(m => m !== method)
+        : [...currentMethods, method];
+      
+      return {
+        ...prev,
+        [useCaseName]: {
+          ...prev[useCaseName],
+          accessMethods: newMethods,
+          enabled: prev[useCaseName]?.enabled ?? true
+        }
+      };
+    });
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -436,27 +485,30 @@ const OnboardingWizard = () => {
     }
 
     if (currentStep === 3) { // Access Methods step
-      const browserUsers = accessMethodsData
-        .filter(d => d.accessMethod === 'Browser Access')
-        .reduce((sum, d) => sum + d.users, 0);
-      const apiUsers = accessMethodsData
-        .filter(d => d.accessMethod === 'API')
-        .reduce((sum, d) => sum + d.users, 0);
-      const nativeUsers = accessMethodsData
-        .filter(d => d.accessMethod === 'Native App')
-        .reduce((sum, d) => sum + d.users, 0);
-      
-      const totalUsers = browserUsers + apiUsers + nativeUsers;
-      const dominantMethod = Math.max(browserUsers, apiUsers, nativeUsers) === browserUsers 
-        ? 'Browser Access' 
-        : Math.max(apiUsers, nativeUsers) === apiUsers 
-          ? 'API' 
-          : 'Native App';
+      const methodCounts = accessMethodsData.reduce((acc, d) => {
+        acc[d.accessMethod as AccessMethod] += d.users;
+        return acc;
+      }, {
+        'Browser Access': 0,
+        'Native App': 0,
+        'API': 0
+      } as Record<AccessMethod, number>);
+
+      const totalUsers = Object.values(methodCounts).reduce((sum, count) => sum + count, 0);
+      const dominantMethod = Object.entries(methodCounts).reduce((a, b) => 
+        a[1] > b[1] ? a : b
+      )[0] as AccessMethod;
+
+      const multiMethodUseCases = Array.from(new Set(
+        accessMethodsData
+          .filter(d => d.users > 100)
+          .map(d => d.name)
+      )).length;
       
       return [
-        `${dominantMethod} is the preferred access method with ${Math.round((Math.max(browserUsers, apiUsers, nativeUsers)/totalUsers)*100)}% of total usage.`,
-        'Code Generation and Healthcare show strong API usage, while Conversation and Grammar prefer browser-based access.',
-        'Consider implementing unified authentication across all access methods to maintain security consistency.',
+        `${dominantMethod} is the preferred access method with ${Math.round((methodCounts[dominantMethod]/totalUsers)*100)}% of total usage.`,
+        `${multiMethodUseCases} use cases show significant adoption across multiple access methods, suggesting a need for unified access controls.`,
+        'Consider implementing SSO and unified audit logging across all access methods to maintain security consistency.',
       ];
     }
     
@@ -610,34 +662,66 @@ const OnboardingWizard = () => {
 
                 {steps[currentStep].useCaseAccess && (
                   <Stack direction="row" spacing={8} align="start" pt={4}>
-                    <VStack spacing={4} align="stretch" flex={1}>
-                      {steps[currentStep].useCaseAccess.map((useCase) => (
-                        <HStack key={useCase.name} justify="space-between">
-                          <HStack>
-                            <Text fontSize="md">{useCase.name}</Text>
-                            <Tooltip label={useCase.tooltip} placement="top">
-                              <Icon as={InfoIcon} color="gray.400" />
-                            </Tooltip>
-                          </HStack>
-                          <HStack spacing={4}>
-                            <Select
-                              size="sm"
-                              width="200px"
-                              value={accessConfigs[useCase.name]?.accessMethod || 'Browser Access'}
-                              onChange={(e) => handleAccessMethodChange(useCase.name, e.target.value as AccessMethod)}
-                            >
-                              <option value="Browser Access">Browser Access</option>
-                              <option value="Native App">Native App</option>
-                              <option value="API">API</option>
-                            </Select>
-                            <Switch
-                              colorScheme="green"
-                              defaultChecked={useCase.default}
-                              onChange={() => handleToggle(useCase.name)}
-                            />
-                          </HStack>
-                        </HStack>
-                      ))}
+                    <VStack spacing={6} align="stretch" flex={1}>
+                      {['Development', 'Communication', 'Business', 'Other'].map(category => {
+                        const categoryUseCases = steps[currentStep].useCaseAccess?.filter(useCase => {
+                          if (category === 'Development') return ['Code Generation'].includes(useCase.name);
+                          if (category === 'Communication') return ['Conversation', 'Grammar'].includes(useCase.name);
+                          if (category === 'Business') return ['Productivity', 'Business'].includes(useCase.name);
+                          return ['Healthcare', 'Media', 'Travel'].includes(useCase.name);
+                        });
+
+                        if (!categoryUseCases?.length) return null;
+
+                        return (
+                          <Box key={category} borderWidth="1px" borderRadius="lg" p={4}>
+                            <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection(category)}>
+                              <Heading size="sm" color="gray.700">{category}</Heading>
+                              <Icon 
+                                as={expandedSections[category] ? ChevronUpIcon : ChevronDownIcon}
+                                color="gray.500"
+                              />
+                            </HStack>
+                            <Collapse in={expandedSections[category] ?? true}>
+                              <VStack align="stretch" mt={4} spacing={4}>
+                                {categoryUseCases.map((useCase) => (
+                                  <VStack key={useCase.name} align="stretch" spacing={2}>
+                                    <HStack justify="space-between">
+                                      <HStack>
+                                        <Text fontSize="md">{useCase.name}</Text>
+                                        <Tooltip label={useCase.tooltip} placement="top">
+                                          <Icon as={InfoIcon} color="gray.400" />
+                                        </Tooltip>
+                                      </HStack>
+                                      <Switch
+                                        colorScheme="green"
+                                        defaultChecked={useCase.default}
+                                        onChange={() => handleToggle(useCase.name)}
+                                      />
+                                    </HStack>
+                                    <Box pl={4}>
+                                      <Text fontSize="sm" color="gray.600" mb={2}>Access Methods:</Text>
+                                      <SimpleGrid columns={3} spacing={4}>
+                                        {(['Browser Access', 'Native App', 'API'] as AccessMethod[]).map((method) => (
+                                          <HStack key={method}>
+                                            <Switch
+                                              size="sm"
+                                              colorScheme="green"
+                                              isChecked={accessConfigs[useCase.name]?.accessMethods?.includes(method) ?? false}
+                                              onChange={() => handleAccessMethodToggle(useCase.name, method)}
+                                            />
+                                            <Text fontSize="sm">{method}</Text>
+                                          </HStack>
+                                        ))}
+                                      </SimpleGrid>
+                                    </Box>
+                                  </VStack>
+                                ))}
+                              </VStack>
+                            </Collapse>
+                          </Box>
+                        );
+                      })}
                     </VStack>
                   </Stack>
                 )}
@@ -755,47 +839,81 @@ const OnboardingWizard = () => {
                           </Box>
                         </>
                       ) : currentStep === 3 ? (
-                        <>
-                          <Divider my={6} borderColor={borderColor} />
-                          <Box>
-                            <Heading size="md" color="green.600" mb={6}>
-                              What's Happening in Your Organization?
+                        <Box mt={8}>
+                          <Box flex={1} h="500px">
+                            <Heading size="sm" color="gray.600" mb={8} textAlign="center">
+                              AI Use Case Access Methods Distribution
                             </Heading>
-                            <Box flex={1} h="400px">
-                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                                AI Use Case Access Methods Distribution
-                              </Heading>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <Sankey
-                                  data={sankeyData}
-                                  node={
-                                    <Rectangle
-                                      fill="#48BB78"
-                                      opacity={0.8}
-                                    />
-                                  }
-                                  link={{
-                                    stroke: "#48BB78",
-                                    strokeOpacity: 0.2,
+                            <ResponsiveContainer width="100%" height="100%">
+                              <RadarChart 
+                                cx="50%" 
+                                cy="50%" 
+                                outerRadius="80%" 
+                                data={transformedAccessData}
+                              >
+                                <PolarGrid stroke="#48BB78" strokeOpacity={0.2} />
+                                <PolarAngleAxis 
+                                  dataKey="name" 
+                                  tick={{ 
+                                    fill: "#2D3748",
+                                    fontSize: 14,
+                                    fontWeight: "bold"
                                   }}
-                                  nodePadding={50}
-                                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                                >
-                                  <RechartsTooltip content={({ payload }) => {
-                                    if (!payload || !payload.length) return null;
-                                    const data = payload[0];
+                                />
+                                <PolarRadiusAxis 
+                                  angle={30} 
+                                  domain={[0, 'auto']}
+                                  tick={{ 
+                                    fill: "#718096",
+                                    fontSize: 12
+                                  }}
+                                />
+                                <Radar 
+                                  name="Browser Access"
+                                  dataKey="Browser Access"
+                                  stroke="#48BB78"
+                                  fill="#48BB78"
+                                  fillOpacity={0.5}
+                                />
+                                <Radar 
+                                  name="Native App"
+                                  dataKey="Native App"
+                                  stroke="#805AD5"
+                                  fill="#805AD5"
+                                  fillOpacity={0.5}
+                                />
+                                <Radar 
+                                  name="API"
+                                  dataKey="API"
+                                  stroke="#DD6B20"
+                                  fill="#DD6B20"
+                                  fillOpacity={0.5}
+                                />
+                                <Legend 
+                                  wrapperStyle={{
+                                    paddingTop: "20px",
+                                    fontSize: "14px"
+                                  }}
+                                />
+                                <RechartsTooltip
+                                  content={({ active, payload }) => {
+                                    if (!active || !payload || !payload.length) return null;
                                     return (
                                       <Box bg="white" p={2} borderRadius="md" boxShadow="md">
-                                        <Text fontWeight="bold">{data.name}</Text>
-                                        <Text>Users: {data.value}</Text>
+                                        <Text fontWeight="bold">{payload[0].payload.name}</Text>
+                                        {payload.map((entry, i) => (
+                                          <Text key={i} fontSize="sm">
+                                            {entry.name}: {entry.value} users
+                                          </Text>
+                                        ))}
                                       </Box>
                                     );
-                                  }} />
-                                </Sankey>
-                              </ResponsiveContainer>
-                            </Box>
+                                  }}
+                                />
+                              </RadarChart>
+                            </ResponsiveContainer>
                           </Box>
-                        </>
+                        </Box>
                       ) : null}
                     </Box>
                   </>
