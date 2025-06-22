@@ -163,6 +163,11 @@ const steps: Step[] = [
       'Let\'s make data-informed choices together.',
   },
   {
+    title: 'Select Approved AI Applications',
+    description: 'AI Applications spans across various vendors. Choose what AI apps your organization will allow.',
+    aiApplications: aiApplicationData,
+  },
+  {
     title: 'Select Approved AI Use Cases',
     description: 'Choose the AI use-cases your organization will allow. These preferences help us tailor AI security settings to your actual business needs.',
     configurations: [
@@ -207,11 +212,6 @@ const steps: Step[] = [
         default: false,
       }
     ],
-  },
-  {
-    title: 'Select Approved AI Applications',
-    description: 'AI Applications spans across various vendors. Choose what AI apps your organization will allow.',
-    aiApplications: aiApplicationData,
   },
   {
     title: 'Data Management',
@@ -303,7 +303,7 @@ const OnboardingWizard = () => {
   const sidePanelBg = useColorModeValue('gray.50', 'gray.700');
 
   const getRecommendations = () => {
-    if (currentStep === 2) { // AI Applications step
+    if (currentStep === 1) { // AI Applications step
       const topApp = aiApplicationData.reduce((prev, current) => 
         (prev.usageStats.privateLicense + prev.usageStats.enterpriseLicense > 
          current.usageStats.privateLicense + current.usageStats.enterpriseLicense) ? prev : current
@@ -316,7 +316,7 @@ const OnboardingWizard = () => {
       ];
     }
     
-    if (currentStep === 1) { // Use Cases step
+    if (currentStep === 2) { // Use Cases step
       const totalUsers = barData.reduce((sum, item) => sum + item.users, 0);
       const topUseCase = barData.reduce((prev, current) => 
         (prev.users > current.users) ? prev : current
@@ -486,8 +486,49 @@ const OnboardingWizard = () => {
                         What's Happening in Your Organization?
                       </Heading>
                       
-                      <HStack spacing={8} align="start">
-                        {currentStep === 1 ? (
+                      {currentStep === 1 ? (
+                        <>
+                          <SimpleGrid columns={3} spacing={8} mb={6}>
+                            <Stat
+                              px={4}
+                              py={3}
+                              bg={useColorModeValue('white', 'gray.700')}
+                              shadow="base"
+                              rounded="lg"
+                              borderColor={borderColor}
+                              borderWidth="1px"
+                            >
+                              <StatLabel fontSize="sm" color="gray.500">Detected AI Apps</StatLabel>
+                              <StatNumber color="green.500">{totalDetectedApps.toLocaleString()}</StatNumber>
+                              <StatHelpText mb={0}>Total apps</StatHelpText>
+                            </Stat>
+                            <Stat
+                              px={4}
+                              py={3}
+                              bg={useColorModeValue('white', 'gray.700')}
+                              shadow="base"
+                              rounded="lg"
+                              borderColor={borderColor}
+                              borderWidth="1px"
+                            >
+                              <StatLabel fontSize="sm" color="gray.500">AI Users</StatLabel>
+                              <StatNumber color="green.500">{totalAIUsers.toLocaleString()}</StatNumber>
+                              <StatHelpText mb={0}>Active users</StatHelpText>
+                            </Stat>
+                            <Stat
+                              px={4}
+                              py={3}
+                              bg={useColorModeValue('white', 'gray.700')}
+                              shadow="base"
+                              rounded="lg"
+                              borderColor={borderColor}
+                              borderWidth="1px"
+                            >
+                              <StatLabel fontSize="sm" color="gray.500">AI Adoption Rate</StatLabel>
+                              <StatNumber color="green.500">{aiAdoptionRate}%</StatNumber>
+                              <StatHelpText mb={0}>Organization-wide</StatHelpText>
+                            </Stat>
+                          </SimpleGrid>
                           <Box flex={1} h="300px">
                             <Heading size="sm" color="gray.600" mb={4} textAlign="center">
                               AI Application Usage by License Type
@@ -504,113 +545,51 @@ const OnboardingWizard = () => {
                               </BarChart>
                             </ResponsiveContainer>
                           </Box>
-                        ) : (
-                          <>
-                            <Box flex={1} h="300px">
-                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                        </>
+                      ) : currentStep === 2 ? (
+                        <HStack spacing={8} align="start">
+                          <Box flex={1} h="300px">
+                            <Heading size="sm" color="gray.600" mb={4} textAlign="center">
                               GenAI Apps in Use (by Category)
-                              </Heading>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={pieData}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label
-                                  >
-                                    {pieData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                  </Pie>
-                                  <Legend />
-                                  <RechartsTooltip />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </Box>
-                            
-                            <Box flex={1} h="300px">
-                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                            </Heading>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={pieData}
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={80}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  label
+                                >
+                                  {pieData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  ))}
+                                </Pie>
+                                <Legend />
+                                <RechartsTooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </Box>
+                          
+                          <Box flex={1} h="300px">
+                            <Heading size="sm" color="gray.600" mb={4} textAlign="center">
                               User Engagement per Use Case
-                              </Heading>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={barData}>
-                                  <CartesianGrid strokeDasharray="3 3" />
-                                  <XAxis dataKey="name" />
-                                  <YAxis />
-                                  <RechartsTooltip />
-                                  <Legend />
-                                  <Bar dataKey="users" fill="#48BB78" />
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </Box>
-                          </>
-                        )}
-                      </HStack>
-                    </Box>
-                  </>
-                )}
-
-                {currentStep === 2 && (
-                  <>
-                    <SimpleGrid columns={3} spacing={8} mb={6}>
-                      <Stat
-                        px={4}
-                        py={3}
-                        bg={useColorModeValue('white', 'gray.700')}
-                        shadow="base"
-                        rounded="lg"
-                        borderColor={borderColor}
-                        borderWidth="1px"
-                      >
-                        <StatLabel fontSize="sm" color="gray.500">Detected AI Apps</StatLabel>
-                        <StatNumber color="green.500">{totalDetectedApps.toLocaleString()}</StatNumber>
-                        <StatHelpText mb={0}>Total apps</StatHelpText>
-                      </Stat>
-                      <Stat
-                        px={4}
-                        py={3}
-                        bg={useColorModeValue('white', 'gray.700')}
-                        shadow="base"
-                        rounded="lg"
-                        borderColor={borderColor}
-                        borderWidth="1px"
-                      >
-                        <StatLabel fontSize="sm" color="gray.500">AI Users</StatLabel>
-                        <StatNumber color="green.500">{totalAIUsers.toLocaleString()}</StatNumber>
-                        <StatHelpText mb={0}>Active users</StatHelpText>
-                      </Stat>
-                      <Stat
-                        px={4}
-                        py={3}
-                        bg={useColorModeValue('white', 'gray.700')}
-                        shadow="base"
-                        rounded="lg"
-                        borderColor={borderColor}
-                        borderWidth="1px"
-                      >
-                        <StatLabel fontSize="sm" color="gray.500">AI Adoption Rate</StatLabel>
-                        <StatNumber color="green.500">{aiAdoptionRate}%</StatNumber>
-                        <StatHelpText mb={0}>Organization-wide</StatHelpText>
-                      </Stat>
-                    </SimpleGrid>
-                    <Box flex={1} h="300px">
-                      <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                        AI Application Usage by License Type
-                      </Heading>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={aiUsageData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <RechartsTooltip />
-                          <Legend />
-                          <Bar dataKey="privateLicense" name="Private License" fill={LICENSE_COLORS.privateLicense} />
-                          <Bar dataKey="enterpriseLicense" name="Enterprise License" fill={LICENSE_COLORS.enterpriseLicense} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                            </Heading>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={barData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Legend />
+                                <Bar dataKey="users" fill="#48BB78" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        </HStack>
+                      ) : null}
                     </Box>
                   </>
                 )}
