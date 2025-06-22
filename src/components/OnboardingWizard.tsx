@@ -21,6 +21,11 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { 
   InfoIcon, 
@@ -158,11 +163,6 @@ const steps: Step[] = [
       'Let\'s make data-informed choices together.',
   },
   {
-    title: 'Select Approved AI Applications',
-    description: 'AI Applications spans across various vendors. Choose what AI apps your organization will allow.',
-    aiApplications: aiApplicationData,
-  },
-  {
     title: 'Select Approved AI Use Cases',
     description: 'Choose the AI use-cases your organization will allow. These preferences help us tailor AI security settings to your actual business needs.',
     configurations: [
@@ -209,6 +209,11 @@ const steps: Step[] = [
     ],
   },
   {
+    title: 'Select Approved AI Applications',
+    description: 'AI Applications spans across various vendors. Choose what AI apps your organization will allow.',
+    aiApplications: aiApplicationData,
+  },
+  {
     title: 'Data Management',
     description: 'Set up how your organization handles data retention and backup policies. These settings will affect how long data is stored and how it\'s protected.',
     configurations: [
@@ -230,6 +235,17 @@ const steps: Step[] = [
     ],
   },
 ];
+
+// Calculate total users and adoption metrics
+const totalDetectedApps = 1371;
+const totalAIUsers = 3688;
+const aiAdoptionRate = 66;
+
+// Updated bar chart colors
+const LICENSE_COLORS = {
+  privateLicense: '#805AD5', // Purple
+  enterpriseLicense: '#DD6B20', // Orange
+};
 
 const OnboardingWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -287,7 +303,7 @@ const OnboardingWizard = () => {
   const sidePanelBg = useColorModeValue('gray.50', 'gray.700');
 
   const getRecommendations = () => {
-    if (currentStep === 1) { // AI Applications step
+    if (currentStep === 2) { // AI Applications step
       const topApp = aiApplicationData.reduce((prev, current) => 
         (prev.usageStats.privateLicense + prev.usageStats.enterpriseLicense > 
          current.usageStats.privateLicense + current.usageStats.enterpriseLicense) ? prev : current
@@ -296,19 +312,24 @@ const OnboardingWizard = () => {
       return [
         `${topApp.name} leads adoption with ${topApp.usageStats.privateLicense + topApp.usageStats.enterpriseLicense} total users across both license types.`,
         'Enterprise licenses show higher adoption rates across most AI applications.',
-        'Consider implementing cross-application monitoring to prevent data leaks between applications.',
+        `Organization-wide AI adoption rate is at ${aiAdoptionRate}% with ${totalAIUsers.toLocaleString()} active users.`,
       ];
     }
-    const totalUsers = barData.reduce((sum, item) => sum + item.users, 0);
-    const topUseCase = barData.reduce((prev, current) => 
-      (prev.users > current.users) ? prev : current
-    );
     
-    return [
-      `Code Generation leads adoption with ${Math.round((topUseCase.users/totalUsers)*100)}% of users. GitHub Copilot dominates (73%), followed by Cursor AI (25%) and Windsurf (2%).`,
-      'Claude-Sonnet 3.5 is your most utilized AI model, with Claude-Sonnet 3.7 showing increasing adoption in recent deployments.',
-      'Multiple AI use cases running simultaneously suggests implementing cross-functional monitoring to prevent data leaks between applications.',
-    ];
+    if (currentStep === 1) { // Use Cases step
+      const totalUsers = barData.reduce((sum, item) => sum + item.users, 0);
+      const topUseCase = barData.reduce((prev, current) => 
+        (prev.users > current.users) ? prev : current
+      );
+      
+      return [
+        `Code Generation leads adoption with ${Math.round((topUseCase.users/totalUsers)*100)}% of users. GitHub Copilot dominates (73%), followed by Cursor AI (25%) and Windsurf (2%).`,
+        'Claude-Sonnet 3.5 is your most utilized AI model, with Claude-Sonnet 3.7 showing increasing adoption in recent deployments.',
+        'Multiple AI use cases running simultaneously suggests implementing cross-functional monitoring to prevent data leaks between applications.',
+      ];
+    }
+    
+    return [];
   };
 
   return (
@@ -478,8 +499,8 @@ const OnboardingWizard = () => {
                                 <YAxis />
                                 <RechartsTooltip />
                                 <Legend />
-                                <Bar dataKey="privateLicense" name="Private License" fill="#48BB78" />
-                                <Bar dataKey="enterpriseLicense" name="Enterprise License" fill="#38A169" />
+                                <Bar dataKey="privateLicense" name="Private License" fill={LICENSE_COLORS.privateLicense} />
+                                <Bar dataKey="enterpriseLicense" name="Enterprise License" fill={LICENSE_COLORS.enterpriseLicense} />
                               </BarChart>
                             </ResponsiveContainer>
                           </Box>
@@ -528,6 +549,68 @@ const OnboardingWizard = () => {
                           </>
                         )}
                       </HStack>
+                    </Box>
+                  </>
+                )}
+
+                {currentStep === 2 && (
+                  <>
+                    <SimpleGrid columns={3} spacing={8} mb={6}>
+                      <Stat
+                        px={4}
+                        py={3}
+                        bg={useColorModeValue('white', 'gray.700')}
+                        shadow="base"
+                        rounded="lg"
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                      >
+                        <StatLabel fontSize="sm" color="gray.500">Detected AI Apps</StatLabel>
+                        <StatNumber color="green.500">{totalDetectedApps.toLocaleString()}</StatNumber>
+                        <StatHelpText mb={0}>Total apps</StatHelpText>
+                      </Stat>
+                      <Stat
+                        px={4}
+                        py={3}
+                        bg={useColorModeValue('white', 'gray.700')}
+                        shadow="base"
+                        rounded="lg"
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                      >
+                        <StatLabel fontSize="sm" color="gray.500">AI Users</StatLabel>
+                        <StatNumber color="green.500">{totalAIUsers.toLocaleString()}</StatNumber>
+                        <StatHelpText mb={0}>Active users</StatHelpText>
+                      </Stat>
+                      <Stat
+                        px={4}
+                        py={3}
+                        bg={useColorModeValue('white', 'gray.700')}
+                        shadow="base"
+                        rounded="lg"
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                      >
+                        <StatLabel fontSize="sm" color="gray.500">AI Adoption Rate</StatLabel>
+                        <StatNumber color="green.500">{aiAdoptionRate}%</StatNumber>
+                        <StatHelpText mb={0}>Organization-wide</StatHelpText>
+                      </Stat>
+                    </SimpleGrid>
+                    <Box flex={1} h="300px">
+                      <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                        AI Application Usage by License Type
+                      </Heading>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={aiUsageData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <RechartsTooltip />
+                          <Legend />
+                          <Bar dataKey="privateLicense" name="Private License" fill={LICENSE_COLORS.privateLicense} />
+                          <Bar dataKey="enterpriseLicense" name="Enterprise License" fill={LICENSE_COLORS.enterpriseLicense} />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </Box>
                   </>
                 )}
