@@ -26,6 +26,7 @@ import {
   StatNumber,
   StatHelpText,
   SimpleGrid,
+  Select,
 } from '@chakra-ui/react';
 import { 
   InfoIcon, 
@@ -48,6 +49,9 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
+  Sankey,
+  Layer,
+  Rectangle,
 } from 'recharts';
 
 const MotionBox = motion(Box);
@@ -99,6 +103,11 @@ interface Step {
     default: boolean;
   }[];
   aiApplications?: AIApplication[];
+  useCaseAccess?: {
+    name: string;
+    tooltip: string;
+    default: boolean;
+  }[];
 }
 
 // Sample data for AI application usage
@@ -214,24 +223,49 @@ const steps: Step[] = [
     aiApplications: aiApplicationData,
   },
   {
-    title: 'Data Management',
-    description: 'Set up how your organization handles data retention and backup policies. These settings will affect how long data is stored and how it\'s protected.',
-    configurations: [
+    title: 'Access & Consumption Methods',
+    description: 'Set up how your organization should access and consume AI services.',
+    useCaseAccess: [
       {
-        name: 'Automatic Backups',
-        tooltip: 'Create daily backups of all organization data',
+        name: 'Code Generation',
+        tooltip: 'Code generation is the process of using AI to generate code for a given task.',
         default: true,
       },
       {
-        name: 'Data Encryption at Rest',
-        tooltip: 'Encrypt all stored data using industry-standard algorithms',
+        name: 'Conversation',
+        tooltip: 'Conversation is the process of using AI to have a conversation with a user.',
         default: true,
       },
       {
-        name: 'Enable Data Analytics',
-        tooltip: 'Collect and analyze usage data to improve system performance',
+        name: 'Productivity',
+        tooltip: 'Productivity is the process of using AI to help with tasks that are repetitive and time-consuming.',
         default: false,
       },
+      {
+        name: 'Grammar',
+        tooltip: 'Grammar is the process of using AI to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Healthcare',
+        tooltip: 'Healthcare is the process of using AI to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Media',
+        tooltip: 'Media is the process of using AI to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Travel',
+        tooltip: 'Travel is the process of using AI to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      },
+      {
+        name: 'Business',
+        tooltip: 'Business is the process of using AI to help with tasks that are repetitive and time-consuming.',
+        default: false,
+      }
     ],
   },
 ];
@@ -247,10 +281,64 @@ const LICENSE_COLORS = {
   enterpriseLicense: '#DD6B20', // Orange
 };
 
+type AccessMethod = 'Browser Access' | 'Native App' | 'API';
+
+interface UseCaseAccess {
+  name: string;
+  tooltip: string;
+  default: boolean;
+  accessMethod: AccessMethod;
+  users: number;
+}
+
+// Sample data for access methods
+const accessMethodsData = [
+  { name: 'Code Generation', accessMethod: 'API', users: 800 },
+  { name: 'Code Generation', accessMethod: 'Native App', users: 300 },
+  { name: 'Code Generation', accessMethod: 'Browser Access', users: 100 },
+  { name: 'Conversation', accessMethod: 'Browser Access', users: 600 },
+  { name: 'Conversation', accessMethod: 'Native App', users: 400 },
+  { name: 'Productivity', accessMethod: 'Browser Access', users: 500 },
+  { name: 'Productivity', accessMethod: 'API', users: 300 },
+  { name: 'Grammar', accessMethod: 'Browser Access', users: 400 },
+  { name: 'Grammar', accessMethod: 'Native App', users: 200 },
+  { name: 'Healthcare', accessMethod: 'API', users: 300 },
+  { name: 'Healthcare', accessMethod: 'Native App', users: 100 },
+  { name: 'Media', accessMethod: 'Browser Access', users: 200 },
+  { name: 'Media', accessMethod: 'API', users: 100 },
+  { name: 'Travel', accessMethod: 'Browser Access', users: 150 },
+  { name: 'Travel', accessMethod: 'Native App', users: 50 },
+  { name: 'Business', accessMethod: 'API', users: 100 },
+  { name: 'Business', accessMethod: 'Browser Access', users: 50 },
+];
+
+// Prepare Sankey data
+const useCaseNodes = Array.from(new Set(accessMethodsData.map(d => d.name)))
+  .map((name, index) => ({ name, id: index }));
+
+const accessMethodNodes = Array.from(new Set(accessMethodsData.map(d => d.accessMethod)))
+  .map((name, index) => ({ name, id: index + useCaseNodes.length }));
+
+const allNodes = [...useCaseNodes, ...accessMethodNodes];
+
+const sankeyData = {
+  nodes: allNodes,
+  links: accessMethodsData.map(d => {
+    const sourceNode = allNodes.find(n => n.name === d.name);
+    const targetNode = allNodes.find(n => n.name === d.accessMethod);
+    return {
+      source: sourceNode?.id || 0,
+      target: targetNode?.id || 0,
+      value: d.users,
+    };
+  }),
+};
+
 const OnboardingWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [configurations, setConfigurations] = useState<{ [key: string]: boolean }>({});
   const [aiAppConfigs, setAiAppConfigs] = useState<{ [key: string]: { enabled: boolean, licenseType: LicenseType } }>({});
+  const [accessConfigs, setAccessConfigs] = useState<{ [key: string]: { enabled: boolean, accessMethod: AccessMethod } }>({});
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
 
   const handleNext = () => {
@@ -284,6 +372,14 @@ const OnboardingWizard = () => {
           enabled: !prev[configName]?.enabled
         }
       }));
+    } else if (steps[currentStep].useCaseAccess) {
+      setAccessConfigs(prev => ({
+        ...prev,
+        [configName]: {
+          ...prev[configName],
+          enabled: !prev[configName]?.enabled
+        }
+      }));
     }
   };
 
@@ -293,6 +389,16 @@ const OnboardingWizard = () => {
       [appName]: {
         ...prev[appName],
         licenseType
+      }
+    }));
+  };
+
+  const handleAccessMethodChange = (useCaseName: string, accessMethod: AccessMethod) => {
+    setAccessConfigs(prev => ({
+      ...prev,
+      [useCaseName]: {
+        ...prev[useCaseName],
+        accessMethod
       }
     }));
   };
@@ -326,6 +432,31 @@ const OnboardingWizard = () => {
         `${topApp.name} leads adoption with ${topApp.usageStats.privateLicense + topApp.usageStats.enterpriseLicense} total users across both license types.`,
         'Enterprise licenses show higher adoption rates across most AI applications.',
         `Organization-wide AI adoption rate is at ${aiAdoptionRate}% with ${totalAIUsers.toLocaleString()} active users.`,
+      ];
+    }
+
+    if (currentStep === 3) { // Access Methods step
+      const browserUsers = accessMethodsData
+        .filter(d => d.accessMethod === 'Browser Access')
+        .reduce((sum, d) => sum + d.users, 0);
+      const apiUsers = accessMethodsData
+        .filter(d => d.accessMethod === 'API')
+        .reduce((sum, d) => sum + d.users, 0);
+      const nativeUsers = accessMethodsData
+        .filter(d => d.accessMethod === 'Native App')
+        .reduce((sum, d) => sum + d.users, 0);
+      
+      const totalUsers = browserUsers + apiUsers + nativeUsers;
+      const dominantMethod = Math.max(browserUsers, apiUsers, nativeUsers) === browserUsers 
+        ? 'Browser Access' 
+        : Math.max(apiUsers, nativeUsers) === apiUsers 
+          ? 'API' 
+          : 'Native App';
+      
+      return [
+        `${dominantMethod} is the preferred access method with ${Math.round((Math.max(browserUsers, apiUsers, nativeUsers)/totalUsers)*100)}% of total usage.`,
+        'Code Generation and Healthcare show strong API usage, while Conversation and Grammar prefer browser-based access.',
+        'Consider implementing unified authentication across all access methods to maintain security consistency.',
       ];
     }
     
@@ -477,6 +608,40 @@ const OnboardingWizard = () => {
                   </Stack>
                 )}
 
+                {steps[currentStep].useCaseAccess && (
+                  <Stack direction="row" spacing={8} align="start" pt={4}>
+                    <VStack spacing={4} align="stretch" flex={1}>
+                      {steps[currentStep].useCaseAccess.map((useCase) => (
+                        <HStack key={useCase.name} justify="space-between">
+                          <HStack>
+                            <Text fontSize="md">{useCase.name}</Text>
+                            <Tooltip label={useCase.tooltip} placement="top">
+                              <Icon as={InfoIcon} color="gray.400" />
+                            </Tooltip>
+                          </HStack>
+                          <HStack spacing={4}>
+                            <Select
+                              size="sm"
+                              width="200px"
+                              value={accessConfigs[useCase.name]?.accessMethod || 'Browser Access'}
+                              onChange={(e) => handleAccessMethodChange(useCase.name, e.target.value as AccessMethod)}
+                            >
+                              <option value="Browser Access">Browser Access</option>
+                              <option value="Native App">Native App</option>
+                              <option value="API">API</option>
+                            </Select>
+                            <Switch
+                              colorScheme="green"
+                              defaultChecked={useCase.default}
+                              onChange={() => handleToggle(useCase.name)}
+                            />
+                          </HStack>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Stack>
+                )}
+
                 {currentStep > 0 && (
                   <>
                     <Divider my={6} borderColor={borderColor} />
@@ -587,6 +752,48 @@ const OnboardingWizard = () => {
                                 <Bar dataKey="enterpriseLicense" name="Enterprise License" fill={LICENSE_COLORS.enterpriseLicense} />
                               </BarChart>
                             </ResponsiveContainer>
+                          </Box>
+                        </>
+                      ) : currentStep === 3 ? (
+                        <>
+                          <Divider my={6} borderColor={borderColor} />
+                          <Box>
+                            <Heading size="md" color="green.600" mb={6}>
+                              What's Happening in Your Organization?
+                            </Heading>
+                            <Box flex={1} h="400px">
+                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                AI Use Case Access Methods Distribution
+                              </Heading>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <Sankey
+                                  data={sankeyData}
+                                  node={
+                                    <Rectangle
+                                      fill="#48BB78"
+                                      opacity={0.8}
+                                    />
+                                  }
+                                  link={{
+                                    stroke: "#48BB78",
+                                    strokeOpacity: 0.2,
+                                  }}
+                                  nodePadding={50}
+                                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                                >
+                                  <RechartsTooltip content={({ payload }) => {
+                                    if (!payload || !payload.length) return null;
+                                    const data = payload[0];
+                                    return (
+                                      <Box bg="white" p={2} borderRadius="md" boxShadow="md">
+                                        <Text fontWeight="bold">{data.name}</Text>
+                                        <Text>Users: {data.value}</Text>
+                                      </Box>
+                                    );
+                                  }} />
+                                </Sankey>
+                              </ResponsiveContainer>
+                            </Box>
                           </Box>
                         </>
                       ) : null}
