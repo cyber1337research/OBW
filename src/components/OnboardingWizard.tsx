@@ -100,6 +100,18 @@ interface AIApplication {
   };
 }
 
+// Add new types for DLP and Topic Classification
+interface DLPCategory {
+  name: string;
+  items: { name: string; enabled: boolean; }[];
+}
+
+interface TopicClassification {
+  name: string;
+  enabled: boolean;
+  action: 'Allow' | 'Monitor' | 'Block';
+}
+
 interface Step {
   title: string;
   description: string;
@@ -114,6 +126,8 @@ interface Step {
     tooltip: string;
     default: boolean;
   }[];
+  dlpCategories?: DLPCategory[];
+  topicClassifications?: TopicClassification[];
 }
 
 // Sample data for AI application usage
@@ -168,6 +182,20 @@ const aiUsageData = aiApplicationData.map(app => ({
   privateLicense: app.usageStats.privateLicense,
   enterpriseLicense: app.usageStats.enterpriseLicense,
 }));
+
+// Add sample data for the violation distribution charts
+const dlpViolationData = [
+  { name: 'PII', violations: 450, industryAvg: 380 },
+  { name: 'Secrets', violations: 280, industryAvg: 320 },
+];
+
+const topicDistributionData = [
+  { name: 'Company Financial', current: 25, industryAvg: 22 },
+  { name: 'Human Resource', current: 20, industryAvg: 18 },
+  { name: 'Legal', current: 15, industryAvg: 20 },
+  { name: 'Health and Medical', current: 18, industryAvg: 15 },
+  { name: 'Code Assistant', current: 22, industryAvg: 25 },
+];
 
 const steps: Step[] = [
   {
@@ -274,6 +302,35 @@ const steps: Step[] = [
       }
     ],
   },
+  {
+    title: 'Protecting and Monitoring Sensitive Data',
+    description: 'Define which data protection mechanism to apply to your AI services in your organization',
+    dlpCategories: [
+      {
+        name: 'PII',
+        items: [
+          { name: 'Email', enabled: true },
+          { name: 'Credit Card', enabled: true },
+          { name: 'SSN', enabled: true },
+          { name: 'ID', enabled: true }
+        ]
+      },
+      {
+        name: 'Secrets',
+        items: [
+          { name: 'Access Tokens', enabled: true },
+          { name: 'API-Keys', enabled: true }
+        ]
+      }
+    ],
+    topicClassifications: [
+      { name: 'Company Financial', enabled: true, action: 'Monitor' },
+      { name: 'Human Resource', enabled: true, action: 'Monitor' },
+      { name: 'Legal', enabled: true, action: 'Block' },
+      { name: 'Health and Medical', enabled: true, action: 'Block' },
+      { name: 'Code Assistant', enabled: true, action: 'Allow' }
+    ]
+  }
 ];
 
 // Calculate total users and adoption metrics
@@ -371,7 +428,9 @@ const OnboardingWizard = () => {
     Development: true,
     Communication: true,
     Business: true,
-    Other: true
+    Other: true,
+    DLP: true,
+    Topics: true
   });
 
   // Add toggle function for sections
@@ -505,6 +564,14 @@ const OnboardingWizard = () => {
         `Browser Access is the dominant access method in your organization, with high significance across all use cases (${Math.round((methodCounts['Browser Access']/totalUsers)*100)}% of total usage). This indicates strong preference for web-based AI interfaces.`,
         `Native App adoption follows as the second most popular method (${Math.round((methodCounts['Native App']/totalUsers)*100)}% of total usage), showing particularly strong presence in Code Generation and Conversation use cases.`,
         `API consumption is primarily concentrated in development-focused categories, with Code Generation (${Math.round((codeGenApiUsers/totalApiDevUsers)*100)}%) and Conversation (${Math.round((convApiUsers/totalApiDevUsers)*100)}%) leading API usage. In these categories, Cursor AI accounts for 82% of API calls, followed by ChatGPT at 18%.`,
+      ];
+    }
+
+    if (currentStep === 4) { // Data Protection step
+      return [
+        'Your organization shows 18% higher PII detection rate compared to industry average, suggesting robust data protection practices.',
+        'Code Assistant topics show lower blocking rates than industry average (15% vs 25%). Consider reviewing policies for sensitive code handling.',
+        'Health and Medical data blocking is aligned with compliance requirements, showing 20% higher protection than industry benchmark.',
       ];
     }
     
@@ -722,6 +789,86 @@ const OnboardingWizard = () => {
                   </Stack>
                 )}
 
+                {currentStep === 4 && (
+                  <Stack direction="row" spacing={8} align="start" pt={4}>
+                    <VStack spacing={6} align="stretch" flex={1}>
+                      {/* DLP Section */}
+                      <Box borderWidth="1px" borderRadius="lg" p={4}>
+                        <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('DLP')}>
+                          <Heading size="sm" color="gray.700">Data Loss Prevention</Heading>
+                          <Icon 
+                            as={expandedSections['DLP'] ? ChevronUpIcon : ChevronDownIcon}
+                            color="gray.500"
+                          />
+                        </HStack>
+                        <Collapse in={expandedSections['DLP'] ?? true}>
+                          <VStack align="stretch" mt={4} spacing={4}>
+                            {steps[currentStep].dlpCategories?.map((category) => (
+                              <Box key={category.name}>
+                                <Text fontWeight="bold" mb={2}>{category.name}</Text>
+                                <SimpleGrid columns={4} spacing={4}>
+                                  {category.items.map((item) => (
+                                    <HStack key={item.name}>
+                                      <Switch
+                                        size="sm"
+                                        colorScheme="green"
+                                        defaultChecked={item.enabled}
+                                      />
+                                      <Text fontSize="sm">{item.name}</Text>
+                                    </HStack>
+                                  ))}
+                                </SimpleGrid>
+                              </Box>
+                            ))}
+                          </VStack>
+                        </Collapse>
+                      </Box>
+
+                      {/* Topic Classification Section */}
+                      <Box borderWidth="1px" borderRadius="lg" p={4}>
+                        <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('Topics')}>
+                          <HStack>
+                            <Heading size="sm" color="gray.700">Topic Classification</Heading>
+                            <Tooltip label="Currently support only Chat Assistant">
+                              <Icon as={InfoIcon} color="gray.400" />
+                            </Tooltip>
+                          </HStack>
+                          <Icon 
+                            as={expandedSections['Topics'] ? ChevronUpIcon : ChevronDownIcon}
+                            color="gray.500"
+                          />
+                        </HStack>
+                        <Collapse in={expandedSections['Topics'] ?? true}>
+                          <VStack align="stretch" mt={4} spacing={4}>
+                            {steps[currentStep].topicClassifications?.map((topic) => (
+                              <HStack key={topic.name} justify="space-between">
+                                <HStack>
+                                  <Switch
+                                    size="sm"
+                                    colorScheme="green"
+                                    defaultChecked={topic.enabled}
+                                  />
+                                  <Text fontSize="sm">{topic.name}</Text>
+                                </HStack>
+                                <Select
+                                  size="sm"
+                                  width="120px"
+                                  defaultValue={topic.action}
+                                  variant="filled"
+                                >
+                                  <option value="Allow">Allow</option>
+                                  <option value="Monitor">Monitor</option>
+                                  <option value="Block">Block</option>
+                                </Select>
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </Collapse>
+                      </Box>
+                    </VStack>
+                  </Stack>
+                )}
+
                 {currentStep > 0 && (
                   <>
                     <Divider my={6} borderColor={borderColor} />
@@ -911,6 +1058,50 @@ const OnboardingWizard = () => {
                               </RadarChart>
                             </ResponsiveContainer>
                           </Box>
+                        </Box>
+                      ) : currentStep === 4 ? (
+                        <Box mt={8}>
+                          <Heading size="md" color="green.600" mb={6}>
+                            Industry Benchmark Comparison
+                          </Heading>
+                          <SimpleGrid columns={2} spacing={8}>
+                            <Box>
+                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                DLP Violation Distribution
+                              </Heading>
+                              <Box height="300px">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={dlpViolationData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <RechartsTooltip />
+                                    <Legend />
+                                    <Bar dataKey="violations" name="Your Organization" fill="#48BB78" />
+                                    <Bar dataKey="industryAvg" name="Industry Average" fill="#805AD5" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </Box>
+                            </Box>
+                            <Box>
+                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                Topic Distribution
+                              </Heading>
+                              <Box height="300px">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={topicDistributionData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                                    <YAxis />
+                                    <RechartsTooltip />
+                                    <Legend />
+                                    <Bar dataKey="current" name="Your Organization" fill="#48BB78" />
+                                    <Bar dataKey="industryAvg" name="Industry Average" fill="#805AD5" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </Box>
+                            </Box>
+                          </SimpleGrid>
                         </Box>
                       ) : null}
                     </Box>
