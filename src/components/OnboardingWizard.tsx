@@ -18,7 +18,13 @@ import {
   ListItem,
   ListIcon,
 } from '@chakra-ui/react';
-import { InfoIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { 
+  InfoIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon,
+  StarIcon,
+  SunIcon
+} from '@chakra-ui/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart,
@@ -33,8 +39,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { BsSparkle } from 'react-icons/bs';
-import { AiOutlineBulb } from 'react-icons/ai';
 
 const MotionBox = motion(Box);
 
@@ -192,8 +196,9 @@ const OnboardingWizard = () => {
     );
     
     return [
-      `${topUseCase.name} shows highest adoption with ${Math.round((topUseCase.users/totalUsers)*100)}% of users. Consider prioritizing security measures for this use case.`,
-      'Multiple AI use cases are active simultaneously. Implement cross-functional monitoring to prevent data leaks between applications.',
+      `Code Generation leads adoption with ${Math.round((topUseCase.users/totalUsers)*100)}% of users. GitHub Copilot dominates (73%), followed by Cursor AI (25%) and Windsurf (2%).`,
+      'Claude-Sonnet 3.5 is your most utilized AI model, with Claude-Sonnet 3.7 showing increasing adoption in recent deployments.',
+      'Multiple AI use cases running simultaneously suggests implementing cross-functional monitoring to prevent data leaks between applications.',
     ];
   };
 
@@ -206,18 +211,38 @@ const OnboardingWizard = () => {
         borderRadius="xl"
         overflow="hidden"
         bg={bgColor}
+        position="relative"
       >
         <Box bg="green.500" color="white" p={6}>
-          <Heading size="lg">Organization Setup</Heading>
-          <Box mt={4}>
-            <Progress
-              value={progress}
-              size="sm"
-              colorScheme="green"
-              bg="green.600"
-              borderRadius="full"
-            />
-          </Box>
+          <HStack justify="space-between" align="center">
+            <Box>
+              <Heading size="lg">Organization Setup</Heading>
+              <Box mt={4}>
+                <Progress
+                  value={progress}
+                  size="sm"
+                  colorScheme="green"
+                  bg="green.600"
+                  borderRadius="full"
+                />
+              </Box>
+            </Box>
+            {currentStep > 0 && (
+              <HStack spacing={2}>
+                <Icon as={StarIcon} color="white" boxSize={5} />
+                <Button
+                  rightIcon={isSidePanelOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                  onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+                  size="sm"
+                  variant="outline"
+                  colorScheme="whiteAlpha"
+                  _hover={{ bg: 'whiteAlpha.200' }}
+                >
+                  {isSidePanelOpen ? 'Hide' : 'Show'} AI Insights
+                </Button>
+              </HStack>
+            )}
+          </HStack>
         </Box>
 
         <Box p={8} minH="600px">
@@ -384,7 +409,7 @@ const OnboardingWizard = () => {
           <motion.div
             initial={{ width: 0, opacity: 0 }}
             animate={{ 
-              width: isSidePanelOpen ? "300px" : "40px",
+              width: isSidePanelOpen ? "300px" : "0px",
               opacity: 1 
             }}
             exit={{ width: 0, opacity: 0 }}
@@ -399,20 +424,6 @@ const OnboardingWizard = () => {
               position="relative"
               overflow="hidden"
             >
-              <IconButton
-                aria-label="Toggle panel"
-                icon={isSidePanelOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-                position="absolute"
-                left="0"
-                top="50%"
-                transform="translateY(-50%)"
-                onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-                size="sm"
-                variant="solid"
-                colorScheme="green"
-                zIndex={2}
-              />
-              
               <AnimatePresence mode="wait">
                 {isSidePanelOpen && (
                   <motion.div
@@ -423,7 +434,7 @@ const OnboardingWizard = () => {
                   >
                     <Box p={6}>
                       <HStack spacing={2} mb={6}>
-                        <Icon as={BsSparkle} color="green.500" boxSize={5} />
+                        <Icon as={StarIcon} color="green.500" boxSize={5} />
                         <Heading size="md" color="green.600">
                           AI Tailored Recommendations
                         </Heading>
@@ -432,7 +443,7 @@ const OnboardingWizard = () => {
                       <List spacing={4}>
                         {getRecommendations().map((rec, index) => (
                           <ListItem key={index} display="flex" alignItems="flex-start">
-                            <ListIcon as={AiOutlineBulb} color="green.500" mt={1} />
+                            <ListIcon as={SunIcon} color="green.500" mt={1} />
                             <Text fontSize="sm" color="gray.600">
                               {rec}
                             </Text>
