@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -431,7 +431,24 @@ const transformedAccessData = (() => {
 
 const OnboardingWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [configurations, setConfigurations] = useState<{ [key: string]: boolean }>({});
+  const [configurations, setConfigurations] = useState<{ [key: string]: boolean }>(() => {
+    // Initialize with default values from steps data
+    const initialConfigs: { [key: string]: boolean } = {};
+    
+    // Add DLP defaults
+    steps[4].dlpCategories?.forEach(category => {
+      category.items.forEach(item => {
+        initialConfigs[`${category.name}_${item.name}`] = item.enabled;
+      });
+    });
+
+    // Add Topic Classification defaults
+    steps[4].topicClassifications?.forEach(topic => {
+      initialConfigs[topic.name] = topic.enabled;
+    });
+
+    return initialConfigs;
+  });
   const [aiAppConfigs, setAiAppConfigs] = useState<{ [key: string]: { enabled: boolean, licenseType: LicenseType } }>({});
   const [accessConfigs, setAccessConfigs] = useState<{ [key: string]: { enabled: boolean, accessMethods: AccessMethod[] } }>({});
   const [topicActions, setTopicActions] = useState<{ [key: string]: 'Allow' | 'Monitor' | 'Block' }>({
@@ -441,7 +458,7 @@ const OnboardingWizard = () => {
     'Health_Medical': 'Allow',
     'Code_Assistant': 'Allow'
   });
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     Development: false,
     Communication: false,
@@ -454,12 +471,33 @@ const OnboardingWizard = () => {
     AIInsights: false
   });
 
+  // Reset AI Insights panel state when changing steps
+  useEffect(() => {
+    setExpandedSections(prev => ({
+      ...prev,
+      AIInsights: false
+    }));
+    setIsSidePanelOpen(false);
+  }, [currentStep]);
+
+  // Handle automatic panel opening when expanding AI Insights
+  useEffect(() => {
+    if (expandedSections.AIInsights) {
+      setIsSidePanelOpen(true);
+    }
+  }, [expandedSections.AIInsights]);
+
   // Add toggle function for sections
   const toggleSection = (sectionName: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [sectionName]: !prev[sectionName]
     }));
+  };
+
+  // Modify the panel toggle to maintain manual control
+  const toggleSidePanel = () => {
+    setIsSidePanelOpen(prev => !prev);
   };
 
   const handleNext = () => {
@@ -500,6 +538,11 @@ const OnboardingWizard = () => {
           ...prev[configName],
           enabled: !prev[configName]?.enabled
         }
+      }));
+    } else if (steps[currentStep].dlpCategories || steps[currentStep].topicClassifications) {
+      setConfigurations(prev => ({
+        ...prev,
+        [configName]: !prev[configName],
       }));
     }
   };
@@ -629,7 +672,7 @@ const OnboardingWizard = () => {
                 <Icon as={StarIcon} color="white" boxSize={5} />
                 <Button
                   rightIcon={isSidePanelOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-                  onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+                  onClick={toggleSidePanel}
                   size="sm"
                   variant="outline"
                   colorScheme="whiteAlpha"
