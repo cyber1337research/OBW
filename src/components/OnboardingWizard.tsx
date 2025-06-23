@@ -319,9 +319,20 @@ const steps: Step[] = [
         name: 'Secrets',
         items: [
           { name: 'Access Tokens', enabled: true },
-          { name: 'API-Keys', enabled: true }
+          { name: 'API-Keys', enabled: true },
+          { name: 'Passwords', enabled: true },
+          { name: 'Certificates', enabled: true }
         ]
-      }
+      },
+      {
+        name: 'ComplianceFrameworks',
+        items: [
+          { name: 'HIPAA', enabled: true },
+          { name: 'PCI', enabled: true },
+          { name: 'GDPR', enabled: true },
+          { name: 'SOC2', enabled: true }
+        ]
+      },
     ],
     topicClassifications: [
       { name: 'Company Financial', enabled: true, action: 'Monitor' },
@@ -423,6 +434,13 @@ const OnboardingWizard = () => {
   const [configurations, setConfigurations] = useState<{ [key: string]: boolean }>({});
   const [aiAppConfigs, setAiAppConfigs] = useState<{ [key: string]: { enabled: boolean, licenseType: LicenseType } }>({});
   const [accessConfigs, setAccessConfigs] = useState<{ [key: string]: { enabled: boolean, accessMethods: AccessMethod[] } }>({});
+  const [topicActions, setTopicActions] = useState<{ [key: string]: 'Allow' | 'Monitor' | 'Block' }>({
+    'Company_Financial': 'Allow',
+    'Human_Resource': 'Monitor',
+    'Legal': 'Monitor',
+    'Health_Medical': 'Allow',
+    'Code_Assistant': 'Allow'
+  });
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     Development: false,
@@ -431,6 +449,7 @@ const OnboardingWizard = () => {
     Other: false,
     DLP: false,
     Topics: false,
+    Frameworks: true,
     AIProtection: false,
     AIInsights: false
   });
@@ -794,6 +813,211 @@ const OnboardingWizard = () => {
                 {currentStep === 4 && (
                   <Stack direction="row" spacing={8} align="start" pt={4}>
                     <VStack spacing={6} align="stretch" flex={1}>
+                      {/* Frameworks Section */}
+                      <Box borderWidth="1px" borderRadius="lg" p={4}>
+                        <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('Frameworks')}>
+                          <Heading size="sm" color="gray.700">AI Security Frameworks</Heading>
+                          <Icon 
+                            as={expandedSections['Frameworks'] ? ChevronUpIcon : ChevronDownIcon}
+                            color="gray.500"
+                          />
+                        </HStack>
+                        <Collapse in={expandedSections['Frameworks'] ?? true}>
+                          <VStack align="stretch" mt={4} spacing={4}>
+                                                         <HStack spacing={4} width="100%" justify="space-between">
+                              <Button
+                                height="50px"
+                                flex={1}
+                                colorScheme="blue"
+                                variant={configurations['NIST_RMF'] ? "solid" : "outline"}
+                                onClick={() => {
+                                  const isActive = !configurations['NIST_RMF'];
+                                  setConfigurations(prev => ({
+                                    ...prev,
+                                    'NIST_RMF': isActive,
+                                    'EU_AI_ACT': false,
+                                    'US_AI_ORDER': false,
+                                    'COSAI': false,
+                                    // DLP Settings
+                                    'PII_Email': isActive,
+                                    'PII_SSN': isActive,
+                                    'Credit_Card': isActive,
+                                    'Access_Tokens': isActive,
+                                    'API_Keys': isActive,
+                                    // Topic Classifications
+                                    'Company_Financial': isActive,
+                                    'Legal': isActive,
+                                    'Health_Medical': isActive,
+                                    // AI Protection
+                                    'Prompt_Injection': isActive,
+                                    'Output_Validation': isActive,
+                                    'Model_Attack': isActive,
+                                    'Block_Training': isActive,
+                                    'Block_No_Deletion': isActive,
+                                    // DLP Categories
+                                    'PII_ID': isActive,
+                                    'Secrets_Access Tokens': isActive,
+                                    'Secrets_API-Keys': isActive,
+                                    'PII_Credit Card': isActive
+                                  }));
+                                  
+                                  // Update topic actions
+                                  setTopicActions(prev => ({
+                                    ...prev,
+                                    'Company_Financial': isActive ? 'Monitor' : 'Allow',
+                                    'Human_Resource': isActive ? 'Block' : 'Monitor',
+                                    'Legal': isActive ? 'Block' : 'Monitor',
+                                    'Health_Medical': isActive ? 'Block' : 'Allow',
+                                    'Code_Assistant': isActive ? 'Monitor' : 'Allow'
+                                  }));
+                                }}
+                              >
+                                <VStack spacing={0}>
+                                  <Text fontSize="md" fontWeight="bold">NIST RMF</Text>
+                                  <Text fontSize="xs">Risk Management</Text>
+                                </VStack>
+                              </Button>
+
+                              <Button
+                                height="50px"
+                                flex={1}
+                                colorScheme="purple"
+                                variant={configurations['EU_AI_ACT'] ? "solid" : "outline"}
+                                onClick={() => {
+                                  const isActive = !configurations['EU_AI_ACT'];
+                                  setConfigurations(prev => ({
+                                    ...prev,
+                                    'NIST_RMF': false,
+                                    'EU_AI_ACT': isActive,
+                                    'US_AI_ORDER': false,
+                                    'COSAI': false,
+                                    // DLP Settings
+                                    'PII_Email': isActive,
+                                    'PII_SSN': false,
+                                    'Credit_Card': isActive,
+                                    'Access_Tokens': isActive,
+                                    'API_Keys': false,
+                                    // Topic Classifications
+                                    'Company_Financial': isActive,
+                                    'Legal': isActive,
+                                    'Health_Medical': false,
+                                    // AI Protection
+                                    'Prompt_Injection': isActive,
+                                    'Output_Validation': isActive,
+                                    'Model_Attack': false,
+                                    'Data_Leakage': isActive,
+                                    // DLP Categories
+                                    'PII_ID': false,
+                                    'Secrets_Access Tokens': isActive,
+                                    'Secrets_API-Keys': false,
+                                    'PII_Credit Card': isActive
+                                  }));
+
+                                  // Update topic actions for EU AI ACT
+                                  setTopicActions(prev => ({
+                                    ...prev,
+                                    'Company_Financial': isActive ? 'Block' : 'Allow',
+                                    'Human_Resource': isActive ? 'Monitor' : 'Monitor',
+                                    'Legal': isActive ? 'Block' : 'Monitor',
+                                    'Health_Medical': isActive ? 'Monitor' : 'Allow',
+                                    'Code_Assistant': isActive ? 'Allow' : 'Allow'
+                                  }));
+                                }}
+                              >
+                                <VStack spacing={0}>
+                                  <Text fontSize="md" fontWeight="bold">EU AI ACT</Text>
+                                  <Text fontSize="xs">Regulation</Text>
+                                </VStack>
+                              </Button>
+
+                              <Button
+                                height="50px"
+                                flex={1}
+                                colorScheme="green"
+                                variant={configurations['US_AI_ORDER'] ? "solid" : "outline"}
+                                onClick={() => {
+                                  const isActive = !configurations['US_AI_ORDER'];
+                                  setConfigurations(prev => ({
+                                    ...prev,
+                                    'NIST_RMF': false,
+                                    'EU_AI_ACT': false,
+                                    'US_AI_ORDER': isActive,
+                                    'COSAI': false,
+                                    // DLP Settings
+                                    'PII_Email': isActive,
+                                    'PII_SSN': isActive,
+                                    'Credit_Card': false,
+                                    'Access_Tokens': isActive,
+                                    'API_Keys': isActive,
+                                    // Topic Classifications
+                                    'Company_Financial': false,
+                                    'Legal': isActive,
+                                    'Health_Medical': isActive
+                                  }));
+
+                                  // Update topic actions for US AI Order
+                                  setTopicActions(prev => ({
+                                    ...prev,
+                                    'Company_Financial': isActive ? 'Monitor' : 'Allow',
+                                    'Human_Resource': isActive ? 'Block' : 'Monitor',
+                                    'Legal': isActive ? 'Block' : 'Monitor',
+                                    'Health_Medical': isActive ? 'Block' : 'Allow',
+                                    'Code_Assistant': isActive ? 'Allow' : 'Allow'
+                                  }));
+                                }}
+                              >
+                                <VStack spacing={0}>
+                                  <Text fontSize="md" fontWeight="bold">US AI Order</Text>
+                                  <Text fontSize="xs">Executive Order</Text>
+                                </VStack>
+                              </Button>
+
+                              <Button
+                                height="50px"
+                                flex={1}
+                                colorScheme="orange"
+                                variant={configurations['COSAI'] ? "solid" : "outline"}
+                                onClick={() => {
+                                  const isActive = !configurations['COSAI'];
+                                  setConfigurations(prev => ({
+                                    ...prev,
+                                    'NIST_RMF': false,
+                                    'EU_AI_ACT': false,
+                                    'US_AI_ORDER': false,
+                                    'COSAI': isActive,
+                                    // DLP Settings
+                                    'PII_Email': false,
+                                    'PII_SSN': isActive,
+                                    'Credit_Card': isActive,
+                                    'Access_Tokens': false,
+                                    'API_Keys': isActive,
+                                    // Topic Classifications
+                                    'Company_Financial': isActive,
+                                    'Legal': false,
+                                    'Health_Medical': isActive
+                                  }));
+
+                                  // Update topic actions for COSAI
+                                  setTopicActions(prev => ({
+                                    ...prev,
+                                    'Company_Financial': isActive ? 'Block' : 'Allow',
+                                    'Human_Resource': isActive ? 'Monitor' : 'Monitor',
+                                    'Legal': isActive ? 'Monitor' : 'Monitor',
+                                    'Health_Medical': isActive ? 'Block' : 'Allow',
+                                    'Code_Assistant': isActive ? 'Monitor' : 'Allow'
+                                  }));
+                                }}
+                              >
+                                <VStack spacing={0}>
+                                  <Text fontSize="md" fontWeight="bold">COSAI</Text>
+                                  <Text fontSize="xs">Coalition</Text>
+                                </VStack>
+                              </Button>
+                            </HStack>
+                          </VStack>
+                        </Collapse>
+                      </Box>
+
                       {/* DLP Section */}
                       <Box borderWidth="1px" borderRadius="lg" p={4}>
                         <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('DLP')}>
@@ -814,7 +1038,8 @@ const OnboardingWizard = () => {
                                       <Switch
                                         size="sm"
                                         colorScheme="green"
-                                        defaultChecked={item.enabled}
+                                        isChecked={configurations[`${category.name}_${item.name}`] ?? item.enabled}
+                                        onChange={() => handleToggle(`${category.name}_${item.name}`)}
                                       />
                                       <Text fontSize="sm">{item.name}</Text>
                                     </HStack>
@@ -848,14 +1073,21 @@ const OnboardingWizard = () => {
                                   <Switch
                                     size="sm"
                                     colorScheme="green"
-                                    defaultChecked={topic.enabled}
+                                    isChecked={configurations[topic.name] ?? topic.enabled}
+                                    onChange={() => handleToggle(topic.name)}
                                   />
                                   <Text fontSize="sm">{topic.name}</Text>
                                 </HStack>
                                 <Select
                                   size="sm"
                                   width="120px"
-                                  defaultValue={topic.action}
+                                  value={topicActions[topic.name] || topic.action}
+                                  onChange={(e) => {
+                                    setTopicActions(prev => ({
+                                      ...prev,
+                                      [topic.name]: e.target.value as 'Allow' | 'Monitor' | 'Block'
+                                    }));
+                                  }}
                                   variant="filled"
                                 >
                                   <option value="Allow">Allow</option>
@@ -864,6 +1096,90 @@ const OnboardingWizard = () => {
                                 </Select>
                               </HStack>
                             ))}
+                          </VStack>
+                        </Collapse>
+                      </Box>
+
+
+
+                      {/* AI Protection Section */}
+                      <Box borderWidth="1px" borderRadius="lg" p={4}>
+                        <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('AIProtection')}>
+                          <Heading size="sm" color="gray.700">AI Protection</Heading>
+                          <Icon 
+                            as={expandedSections['AIProtection'] ? ChevronUpIcon : ChevronDownIcon}
+                            color="gray.500"
+                          />
+                        </HStack>
+                        <Collapse in={expandedSections['AIProtection'] ?? true}>
+                          <VStack align="stretch" mt={4} spacing={4}>
+                            <SimpleGrid columns={2} spacing={4}>
+                              <VStack align="start" spacing={2}>
+                                <HStack>
+                                  <Switch 
+                                    colorScheme="green" 
+                                    isChecked={configurations['Prompt_Injection'] ?? true}
+                                    onChange={() => handleToggle('Prompt_Injection')}
+                                  />
+                                  <Text fontSize="sm">Prompt Injection Detection</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.500">
+                                  Detect and prevent malicious prompts
+                                </Text>
+                              </VStack>
+                              <VStack align="start" spacing={2}>
+                                <HStack>
+                                  <Switch 
+                                    colorScheme="green" 
+                                    isChecked={configurations['Output_Validation'] ?? true}
+                                    onChange={() => handleToggle('Output_Validation')}
+                                  />
+                                  <Text fontSize="sm">Output Validation</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.500">
+                                  Validate AI responses for security
+                                </Text>
+                              </VStack>
+                              <VStack align="start" spacing={2}>
+                                <HStack>
+                                  <Switch 
+                                    colorScheme="green" 
+                                    isChecked={configurations['Model_Attack'] ?? true}
+                                    onChange={() => handleToggle('Model_Attack')}
+                                  />
+                                  <Text fontSize="sm">Model Attack Prevention</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.500">
+                                  Protect against model manipulation
+                                </Text>
+                              </VStack>
+                              <VStack align="start" spacing={2}>
+                                <HStack>
+                                  <Switch 
+                                    colorScheme="green" 
+                                    isChecked={configurations['Block_Training'] ?? true}
+                                    onChange={() => handleToggle('Block_Training')}
+                                  />
+                                  <Text fontSize="sm">Block AI services that train on your data</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.500">
+                                  Prevent AI services from using your data for training
+                                </Text>
+                              </VStack>
+                              <VStack align="start" spacing={2}>
+                                <HStack>
+                                  <Switch 
+                                    colorScheme="green" 
+                                    isChecked={configurations['Block_No_Deletion'] ?? true}
+                                    onChange={() => handleToggle('Block_No_Deletion')}
+                                  />
+                                  <Text fontSize="sm">Block AI Services that doesn't allow history deletion</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.500">
+                                  Ensure data removal capabilities
+                                </Text>
+                              </VStack>
+                            </SimpleGrid>
                           </VStack>
                         </Collapse>
                       </Box>
@@ -878,7 +1194,7 @@ const OnboardingWizard = () => {
                     <Box>
                       <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('AIInsights')}>
                         <Heading size="md" color="green.600">
-                          What's Happening in Your Organization Compared to Your Industry Sector?
+                          What's Happening in Your Organization?
                         </Heading>
                         <Icon 
                           as={expandedSections['AIInsights'] ? ChevronUpIcon : ChevronDownIcon}
@@ -1071,9 +1387,7 @@ const OnboardingWizard = () => {
                             </Box>
                           ) : currentStep === 4 ? (
                             <Box mt={8}>
-                              <Heading size="md" color="green.600" mb={6}>
-                                Industry Benchmark Comparison
-                              </Heading>
+
                               <SimpleGrid columns={2} spacing={8}>
                                 <Box>
                                   <Heading size="sm" color="gray.600" mb={4} textAlign="center">
