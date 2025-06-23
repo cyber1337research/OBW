@@ -425,12 +425,14 @@ const OnboardingWizard = () => {
   const [accessConfigs, setAccessConfigs] = useState<{ [key: string]: { enabled: boolean, accessMethods: AccessMethod[] } }>({});
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
-    Development: true,
-    Communication: true,
-    Business: true,
-    Other: true,
-    DLP: true,
-    Topics: true
+    Development: false,
+    Communication: false,
+    Business: false,
+    Other: false,
+    DLP: false,
+    Topics: false,
+    AIProtection: false,
+    AIInsights: false
   });
 
   // Add toggle function for sections
@@ -874,236 +876,246 @@ const OnboardingWizard = () => {
                     <Divider my={6} borderColor={borderColor} />
                     
                     <Box>
-                      <Heading size="md" color="green.600" mb={6}>
-                        What's Happening in Your Organization?
-                      </Heading>
+                      <HStack justify="space-between" cursor="pointer" onClick={() => toggleSection('AIInsights')}>
+                        <Heading size="md" color="green.600">
+                          What's Happening in Your Organization Compared to Your Industry Sector?
+                        </Heading>
+                        <Icon 
+                          as={expandedSections['AIInsights'] ? ChevronUpIcon : ChevronDownIcon}
+                          color="gray.500"
+                        />
+                      </HStack>
                       
-                      {currentStep === 1 ? (
-                        <HStack spacing={8} align="start">
-                          <Box flex={1} h="300px">
-                            <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                              GenAI Apps in Use (by Category)
-                            </Heading>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={pieData}
-                                  cx="50%"
-                                  cy="50%"
-                                  outerRadius={80}
-                                  fill="#8884d8"
-                                  dataKey="value"
-                                  label
-                                >
-                                  {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                  ))}
-                                </Pie>
-                                <Legend />
-                                <RechartsTooltip />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </Box>
-                          
-                          <Box flex={1} h="300px">
-                            <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                              User Engagement per Use Case
-                            </Heading>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={barData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Legend />
-                                <Bar dataKey="users" fill="#48BB78" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </Box>
-                        </HStack>
-                      ) : currentStep === 2 ? (
-                        <>
-                          <SimpleGrid columns={3} spacing={8} mb={6}>
-                            <Stat
-                              px={4}
-                              py={3}
-                              bg={useColorModeValue('white', 'gray.700')}
-                              shadow="base"
-                              rounded="lg"
-                              borderColor={borderColor}
-                              borderWidth="1px"
-                            >
-                              <StatLabel fontSize="sm" color="gray.500">Detected AI Apps</StatLabel>
-                              <StatNumber color="green.500">{totalDetectedApps.toLocaleString()}</StatNumber>
-                              <StatHelpText mb={0}>Total apps</StatHelpText>
-                            </Stat>
-                            <Stat
-                              px={4}
-                              py={3}
-                              bg={useColorModeValue('white', 'gray.700')}
-                              shadow="base"
-                              rounded="lg"
-                              borderColor={borderColor}
-                              borderWidth="1px"
-                            >
-                              <StatLabel fontSize="sm" color="gray.500">AI Users</StatLabel>
-                              <StatNumber color="green.500">{totalAIUsers.toLocaleString()}</StatNumber>
-                              <StatHelpText mb={0}>Active users</StatHelpText>
-                            </Stat>
-                            <Stat
-                              px={4}
-                              py={3}
-                              bg={useColorModeValue('white', 'gray.700')}
-                              shadow="base"
-                              rounded="lg"
-                              borderColor={borderColor}
-                              borderWidth="1px"
-                            >
-                              <StatLabel fontSize="sm" color="gray.500">AI Adoption Rate</StatLabel>
-                              <StatNumber color="green.500">{aiAdoptionRate}%</StatNumber>
-                              <StatHelpText mb={0}>Organization-wide</StatHelpText>
-                            </Stat>
-                          </SimpleGrid>
-                          <Box flex={1} h="300px">
-                            <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                              AI Application Usage by License Type
-                            </Heading>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={aiUsageData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Legend />
-                                <Bar dataKey="privateLicense" name="Private License" fill={LICENSE_COLORS.privateLicense} />
-                                <Bar dataKey="enterpriseLicense" name="Enterprise License" fill={LICENSE_COLORS.enterpriseLicense} />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </Box>
-                        </>
-                      ) : currentStep === 3 ? (
-                        <Box mt={8}>
-                          <Box flex={1} h="500px">
-                            <Heading size="sm" color="gray.600" mb={8} textAlign="center">
-                              AI Use Case Access Methods Distribution
-                            </Heading>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RadarChart 
-                                cx="50%" 
-                                cy="50%" 
-                                outerRadius="80%" 
-                                data={transformedAccessData}
-                              >
-                                <Legend 
-                                  verticalAlign="top"
-                                  align="center"
-                                  wrapperStyle={{
-                                    paddingBottom: "20px",
-                                    fontSize: "14px"
-                                  }}
-                                />
-                                <PolarGrid stroke="#48BB78" strokeOpacity={0.2} />
-                                <PolarAngleAxis 
-                                  dataKey="name" 
-                                  tick={{ 
-                                    fill: "#2D3748",
-                                    fontSize: 14,
-                                    fontWeight: "bold"
-                                  }}
-                                />
-                                <PolarRadiusAxis 
-                                  angle={30} 
-                                  domain={[0, 'auto']}
-                                  tick={{ 
-                                    fill: "#718096",
-                                    fontSize: 12
-                                  }}
-                                />
-                                <Radar 
-                                  name="Browser Access"
-                                  dataKey="Browser Access"
-                                  stroke="#48BB78"
-                                  fill="#48BB78"
-                                  fillOpacity={0.5}
-                                />
-                                <Radar 
-                                  name="Native App"
-                                  dataKey="Native App"
-                                  stroke="#805AD5"
-                                  fill="#805AD5"
-                                  fillOpacity={0.5}
-                                />
-                                <Radar 
-                                  name="API"
-                                  dataKey="API"
-                                  stroke="#DD6B20"
-                                  fill="#DD6B20"
-                                  fillOpacity={0.5}
-                                />
-                                <RechartsTooltip
-                                  content={({ active, payload }) => {
-                                    if (!active || !payload || !payload.length) return null;
-                                    return (
-                                      <Box bg="white" p={2} borderRadius="md" boxShadow="md">
-                                        <Text fontWeight="bold">{payload[0].payload.name}</Text>
-                                        {payload.map((entry, i) => (
-                                          <Text key={i} fontSize="sm">
-                                            {entry.name}: {entry.value} users
-                                          </Text>
-                                        ))}
-                                      </Box>
-                                    );
-                                  }}
-                                />
-                              </RadarChart>
-                            </ResponsiveContainer>
-                          </Box>
-                        </Box>
-                      ) : currentStep === 4 ? (
-                        <Box mt={8}>
-                          <Heading size="md" color="green.600" mb={6}>
-                            Industry Benchmark Comparison
-                          </Heading>
-                          <SimpleGrid columns={2} spacing={8}>
-                            <Box>
-                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                                DLP Violation Distribution
-                              </Heading>
-                              <Box height="300px">
+                      <Collapse in={expandedSections['AIInsights']}>
+                        <Box mt={6}>
+                          {currentStep === 1 ? (
+                            <HStack spacing={8} align="start">
+                              <Box flex={1} h="300px">
+                                <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                  GenAI Apps in Use (by Category)
+                                </Heading>
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={dlpViolationData}>
+                                  <PieChart>
+                                    <Pie
+                                      data={pieData}
+                                      cx="50%"
+                                      cy="50%"
+                                      outerRadius={80}
+                                      fill="#8884d8"
+                                      dataKey="value"
+                                      label
+                                    >
+                                      {pieData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                      ))}
+                                    </Pie>
+                                    <Legend />
+                                    <RechartsTooltip />
+                                  </PieChart>
+                                </ResponsiveContainer>
+                              </Box>
+                              
+                              <Box flex={1} h="300px">
+                                <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                  User Engagement per Use Case
+                                </Heading>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={barData}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis />
                                     <RechartsTooltip />
                                     <Legend />
-                                    <Bar dataKey="violations" name="Your Organization" fill="#48BB78" />
-                                    <Bar dataKey="industryAvg" name="Industry Average" fill="#805AD5" />
+                                    <Bar dataKey="users" fill="#48BB78" />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </Box>
-                            </Box>
-                            <Box>
-                              <Heading size="sm" color="gray.600" mb={4} textAlign="center">
-                                Topic Distribution
-                              </Heading>
-                              <Box height="300px">
+                            </HStack>
+                          ) : currentStep === 2 ? (
+                            <>
+                              <SimpleGrid columns={3} spacing={8} mb={6}>
+                                <Stat
+                                  px={4}
+                                  py={3}
+                                  bg={useColorModeValue('white', 'gray.700')}
+                                  shadow="base"
+                                  rounded="lg"
+                                  borderColor={borderColor}
+                                  borderWidth="1px"
+                                >
+                                  <StatLabel fontSize="sm" color="gray.500">Detected AI Apps</StatLabel>
+                                  <StatNumber color="green.500">{totalDetectedApps.toLocaleString()}</StatNumber>
+                                  <StatHelpText mb={0}>Total apps</StatHelpText>
+                                </Stat>
+                                <Stat
+                                  px={4}
+                                  py={3}
+                                  bg={useColorModeValue('white', 'gray.700')}
+                                  shadow="base"
+                                  rounded="lg"
+                                  borderColor={borderColor}
+                                  borderWidth="1px"
+                                >
+                                  <StatLabel fontSize="sm" color="gray.500">AI Users</StatLabel>
+                                  <StatNumber color="green.500">{totalAIUsers.toLocaleString()}</StatNumber>
+                                  <StatHelpText mb={0}>Active users</StatHelpText>
+                                </Stat>
+                                <Stat
+                                  px={4}
+                                  py={3}
+                                  bg={useColorModeValue('white', 'gray.700')}
+                                  shadow="base"
+                                  rounded="lg"
+                                  borderColor={borderColor}
+                                  borderWidth="1px"
+                                >
+                                  <StatLabel fontSize="sm" color="gray.500">AI Adoption Rate</StatLabel>
+                                  <StatNumber color="green.500">{aiAdoptionRate}%</StatNumber>
+                                  <StatHelpText mb={0}>Organization-wide</StatHelpText>
+                                </Stat>
+                              </SimpleGrid>
+                              <Box flex={1} h="300px">
+                                <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                  AI Application Usage by License Type
+                                </Heading>
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={topicDistributionData}>
+                                  <BarChart data={aiUsageData}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                                    <XAxis dataKey="name" />
                                     <YAxis />
                                     <RechartsTooltip />
                                     <Legend />
-                                    <Bar dataKey="current" name="Your Organization" fill="#48BB78" />
-                                    <Bar dataKey="industryAvg" name="Industry Average" fill="#805AD5" />
+                                    <Bar dataKey="privateLicense" name="Private License" fill={LICENSE_COLORS.privateLicense} />
+                                    <Bar dataKey="enterpriseLicense" name="Enterprise License" fill={LICENSE_COLORS.enterpriseLicense} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </Box>
+                            </>
+                          ) : currentStep === 3 ? (
+                            <Box mt={8}>
+                              <Box flex={1} h="500px">
+                                <Heading size="sm" color="gray.600" mb={8} textAlign="center">
+                                  AI Use Case Access Methods Distribution
+                                </Heading>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <RadarChart 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    outerRadius="80%" 
+                                    data={transformedAccessData}
+                                  >
+                                    <Legend 
+                                      verticalAlign="top"
+                                      align="center"
+                                      wrapperStyle={{
+                                        paddingBottom: "20px",
+                                        fontSize: "14px"
+                                      }}
+                                    />
+                                    <PolarGrid stroke="#48BB78" strokeOpacity={0.2} />
+                                    <PolarAngleAxis 
+                                      dataKey="name" 
+                                      tick={{ 
+                                        fill: "#2D3748",
+                                        fontSize: 14,
+                                        fontWeight: "bold"
+                                      }}
+                                    />
+                                    <PolarRadiusAxis 
+                                      angle={30} 
+                                      domain={[0, 'auto']}
+                                      tick={{ 
+                                        fill: "#718096",
+                                        fontSize: 12
+                                      }}
+                                    />
+                                    <Radar 
+                                      name="Browser Access"
+                                      dataKey="Browser Access"
+                                      stroke="#48BB78"
+                                      fill="#48BB78"
+                                      fillOpacity={0.5}
+                                    />
+                                    <Radar 
+                                      name="Native App"
+                                      dataKey="Native App"
+                                      stroke="#805AD5"
+                                      fill="#805AD5"
+                                      fillOpacity={0.5}
+                                    />
+                                    <Radar 
+                                      name="API"
+                                      dataKey="API"
+                                      stroke="#DD6B20"
+                                      fill="#DD6B20"
+                                      fillOpacity={0.5}
+                                    />
+                                    <RechartsTooltip
+                                      content={({ active, payload }) => {
+                                        if (!active || !payload || !payload.length) return null;
+                                        return (
+                                          <Box bg="white" p={2} borderRadius="md" boxShadow="md">
+                                            <Text fontWeight="bold">{payload[0].payload.name}</Text>
+                                            {payload.map((entry, i) => (
+                                              <Text key={i} fontSize="sm">
+                                                {entry.name}: {entry.value} users
+                                              </Text>
+                                            ))}
+                                          </Box>
+                                        );
+                                      }}
+                                    />
+                                  </RadarChart>
+                                </ResponsiveContainer>
+                              </Box>
                             </Box>
-                          </SimpleGrid>
+                          ) : currentStep === 4 ? (
+                            <Box mt={8}>
+                              <Heading size="md" color="green.600" mb={6}>
+                                Industry Benchmark Comparison
+                              </Heading>
+                              <SimpleGrid columns={2} spacing={8}>
+                                <Box>
+                                  <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                    DLP Violation Distribution
+                                  </Heading>
+                                  <Box height="300px">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <BarChart data={dlpViolationData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Legend />
+                                        <Bar dataKey="violations" name="Your Organization" fill="#48BB78" />
+                                        <Bar dataKey="industryAvg" name="Industry Average" fill="#805AD5" />
+                                      </BarChart>
+                                    </ResponsiveContainer>
+                                  </Box>
+                                </Box>
+                                <Box>
+                                  <Heading size="sm" color="gray.600" mb={4} textAlign="center">
+                                    Topic Distribution
+                                  </Heading>
+                                  <Box height="300px">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <BarChart data={topicDistributionData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                                        <YAxis />
+                                        <RechartsTooltip />
+                                        <Legend />
+                                        <Bar dataKey="current" name="Your Organization" fill="#48BB78" />
+                                        <Bar dataKey="industryAvg" name="Industry Average" fill="#805AD5" />
+                                      </BarChart>
+                                    </ResponsiveContainer>
+                                  </Box>
+                                </Box>
+                              </SimpleGrid>
+                            </Box>
+                          ) : null}
                         </Box>
-                      ) : null}
+                      </Collapse>
                     </Box>
                   </>
                 )}
